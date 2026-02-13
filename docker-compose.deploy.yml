@@ -29,7 +29,7 @@ services:
     volumes:
       - sigea_v1_storage:/app/storage
     ports:
-      - "${SIGEA_APP_PORT:-3100}:3000"
+      - "127.0.0.1:${SIGEA_APP_PORT:-3100}:3000"
     networks:
       - sigea_internal
       - sigea_web
