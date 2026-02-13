@@ -32,5 +32,6 @@ docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" --env-file .env build app
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" --env-file .env up -d
 
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" --env-file .env exec -T app npm run db:migrate:deploy
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" --env-file .env exec -T app npm run db:seed
 
 echo "Deploy completado: rama=$BRANCH proyecto=$PROJECT_NAME"

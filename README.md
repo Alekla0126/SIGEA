@@ -105,10 +105,14 @@ Validacion `READY` (backend + frontend):
   - Assets (sanitizados): `assets/mampara/*`
   - Generador: `src/server/docgen/mampara.ts`
   - Entrada: `FichaPayload` + (opcional) primera evidencia imagen (`image/png|jpeg|jpg|webp`) como foto.
+- PPTX (ficha):
+  - Assets: `assets/ficha/*`
+  - Generador: `src/server/docgen/ficha.ts`
+  - Entrada: `FichaPayload` (tabla estilo ficha como `FICHAS.pptx` de referencia).
 - PDF (MVP):
   - Generador: `src/server/docgen/pdf.tsx`
   - Mapeo de 11 secciones (`section1..section11`) via `src/server/docgen/template.ts`
-  - `fitText()` reduce font-size y trunca con `...` si aun hay overflow.
+  - Salida simple en A4 (11 secciones).
 
 ## API principal
 
@@ -146,7 +150,7 @@ Reportes:
 
 Artefactos:
 
-- `POST /api/records/:id/generate?format=pptx|pdf`
+- `POST /api/records/:id/generate?format=pptx|pdf&template=mampara|ficha` (template aplica a `pptx`)
 - `GET /api/artifacts/:id/download`
 
 Administracion (ADMIN):

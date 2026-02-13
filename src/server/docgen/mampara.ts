@@ -3,7 +3,7 @@ import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 
 import type { FichaPayload } from "@/lib/validators";
-import { fitText } from "@/server/docgen/template";
+import { fitTextToBox } from "@/server/docgen/text-fit";
 
 export type MamparaPptxOptions = {
   photoPath?: string | null;
@@ -112,13 +112,23 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
   });
 
   // Titulo principal
-  slide.addText(buildHeaderTitle(payload), {
+  const titleAdjusted = fitTextToBox({
+    text: buildHeaderTitle(payload),
+    w: 7.99,
+    h: 1.017,
+    baseFontSize: 32,
+    minFontSize: 22,
+    lineHeightMultiple: 1.05,
+    charWidthRatio: 0.6,
+  });
+
+  slide.addText(titleAdjusted.text, {
     x: 0.108,
     y: 0.395,
     w: 7.99,
     h: 1.017,
     fontFace: "Montserrat",
-    fontSize: 32,
+    fontSize: titleAdjusted.fontSize,
     bold: true,
     color: COLORS.white,
     align: "left",
@@ -159,7 +169,15 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
     line: { color: COLORS.beige, pt: 1 },
   });
 
-  const lugarAdjusted = fitText(buildLugarDelHecho(payload), 10.5, 8, 175);
+  const lugarAdjusted = fitTextToBox({
+    text: buildLugarDelHecho(payload),
+    w: 3.32,
+    h: 0.73,
+    baseFontSize: 10.5,
+    minFontSize: 8,
+    lineHeightMultiple: 1.1,
+    charWidthRatio: 0.58,
+  });
   slide.addText(lugarAdjusted.text, {
     x: 1.27,
     y: 1.72,
@@ -207,13 +225,24 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
   }
 
   // Nombre imputado (debajo de foto)
-  slide.addText(toUpperSafe(payload.imputado.nombreCompleto), {
+  const imputadoAdjusted = fitTextToBox({
+    text: toUpperSafe(payload.imputado.nombreCompleto),
+    w: 2.26,
+    h: 0.404,
+    baseFontSize: 9,
+    minFontSize: 6.5,
+    lineHeightMultiple: 1.0,
+    charWidthRatio: 0.6,
+    maxLines: 2,
+  });
+
+  slide.addText(imputadoAdjusted.text, {
     x: 1.787,
     y: 5.762,
     w: 2.26,
     h: 0.404,
     fontFace: "Arial",
-    fontSize: 9,
+    fontSize: imputadoAdjusted.fontSize,
     color: COLORS.black,
     align: "center",
     valign: "middle",
@@ -242,13 +271,23 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
   });
 
   // Identificacion (centro superior)
-  slide.addText(buildIdentificacion(payload), {
+  const identificacionAdjusted = fitTextToBox({
+    text: buildIdentificacion(payload),
+    w: 3.907,
+    h: 1.111,
+    baseFontSize: 12,
+    minFontSize: 8.5,
+    lineHeightMultiple: 1.05,
+    charWidthRatio: 0.6,
+  });
+
+  slide.addText(identificacionAdjusted.text, {
     x: 5.204,
     y: 1.499,
     w: 3.907,
     h: 1.111,
     fontFace: "Montserrat",
-    fontSize: 12,
+    fontSize: identificacionAdjusted.fontSize,
     bold: true,
     color: COLORS.black,
     align: "center",
@@ -280,7 +319,15 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
     valign: "top",
   });
 
-  const hechosBodyAdjusted = fitText(payload.hecho.descripcion || "", 9, 7, 1200);
+  const hechosBodyAdjusted = fitTextToBox({
+    text: payload.hecho.descripcion || "",
+    w: 3.593,
+    h: 5.247,
+    baseFontSize: 9,
+    minFontSize: 7,
+    lineHeightMultiple: 1.15,
+    charWidthRatio: 0.58,
+  });
   slide.addText(hechosBodyAdjusted.text || "", {
     x: 5.425,
     y: 2.47,
@@ -335,7 +382,15 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
     line: { color: COLORS.beige, pt: 1 },
   });
 
-  const avancesAdjusted = fitText(buildAvances(payload), 10.5, 8, 800);
+  const avancesAdjusted = fitTextToBox({
+    text: buildAvances(payload),
+    w: 3.39,
+    h: 2.23,
+    baseFontSize: 10.5,
+    minFontSize: 8,
+    lineHeightMultiple: 1.12,
+    charWidthRatio: 0.6,
+  });
   slide.addText(avancesAdjusted.text || "", {
     x: 9.26,
     y: 3.06,

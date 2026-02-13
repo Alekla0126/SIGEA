@@ -19,10 +19,18 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const formatQuery = new URL(request.url).searchParams.get("format")?.toLowerCase();
+  const searchParams = new URL(request.url).searchParams;
+  const formatQuery = searchParams.get("format")?.toLowerCase();
 
   if (formatQuery !== "pptx" && formatQuery !== "pdf") {
     return fail("Formato invalido. Use pptx o pdf", 400);
+  }
+
+  const templateQuery = searchParams.get("template")?.toLowerCase();
+  const template = templateQuery || "mampara";
+
+  if (formatQuery === "pptx" && template !== "mampara" && template !== "ficha") {
+    return fail("Template invalido. Use mampara o ficha", 400);
   }
 
   const record = await prisma.record.findUnique({ where: { id } });
@@ -41,16 +49,22 @@ export async function POST(
 
   try {
     if (formatQuery === "pptx") {
-      const photoEvidence = await prisma.evidence.findFirst({
-        where: {
-          recordId: id,
-          contentType: { in: ["image/png", "image/jpeg", "image/jpg", "image/webp"] },
-        },
-        orderBy: { createdAt: "asc" },
-        select: { storagePath: true },
-      });
+      const photoEvidence =
+        template === "mampara"
+          ? await prisma.evidence.findFirst({
+              where: {
+                recordId: id,
+                contentType: { in: ["image/png", "image/jpeg", "image/jpg", "image/webp"] },
+              },
+              orderBy: { createdAt: "asc" },
+              select: { storagePath: true },
+            })
+          : null;
 
-      buffer = await generatePptx(parsedPayload.data, { photoPath: photoEvidence?.storagePath ?? null });
+      buffer = await generatePptx(parsedPayload.data, {
+        template: template as "mampara" | "ficha",
+        photoPath: photoEvidence?.storagePath ?? null,
+      });
       extension = "pptx";
       format = ArtifactFormat.PPTX;
     } else {
@@ -76,7 +90,10 @@ export async function POST(
     });
   }
 
-  const saved = await saveArtifactBuffer(`record-${id}.${extension}`, buffer);
+  const saved = await saveArtifactBuffer(
+    formatQuery === "pptx" ? `record-${id}-${template}.${extension}` : `record-${id}.${extension}`,
+    buffer,
+  );
 
   const artifact = await prisma.artifact.create({
     data: {
@@ -101,6 +118,7 @@ export async function POST(
       format: artifact.format,
       sizeBytes: artifact.sizeBytes,
       fileName: artifact.fileName,
+      ...(formatQuery === "pptx" ? { template } : {}),
     },
   });
 

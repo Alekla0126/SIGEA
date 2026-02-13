@@ -3,11 +3,24 @@ import { pdf, type DocumentProps } from "@react-pdf/renderer";
 
 import type { FichaPayload } from "@/lib/validators";
 import { SigeaPdf } from "@/server/docgen/pdf";
+import { generateFichaPptx } from "@/server/docgen/ficha";
 import { generateMamparaPptx, type MamparaPptxOptions } from "@/server/docgen/mampara";
 import { mapPayloadToTemplate } from "@/server/docgen/template";
 
-export async function generatePptx(payload: FichaPayload, options: MamparaPptxOptions = {}) {
-  return generateMamparaPptx(payload, options);
+export type PptxTemplate = "mampara" | "ficha";
+
+export type GeneratePptxOptions = MamparaPptxOptions & {
+  template?: PptxTemplate;
+};
+
+export async function generatePptx(payload: FichaPayload, options: GeneratePptxOptions = {}) {
+  const template = options.template ?? "mampara";
+
+  if (template === "ficha") {
+    return generateFichaPptx(payload);
+  }
+
+  return generateMamparaPptx(payload, { photoPath: options.photoPath ?? null });
 }
 
 export async function generatePdf(payload: FichaPayload) {

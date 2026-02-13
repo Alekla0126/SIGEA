@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { Copy, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +15,24 @@ export default function LoginPage() {
   const [email, setEmail] = useState("flagrancia@sigea.local");
   const [password, setPassword] = useState("Sigea123!");
   const [loading, setLoading] = useState(false);
+
+  const demoPassword = "Sigea123!";
+  const demoUsers = [
+    { role: "FLAGRANCIA", email: "flagrancia@sigea.local" },
+    { role: "MP", email: "mp@sigea.local" },
+    { role: "LITIGACION", email: "litigacion@sigea.local" },
+    { role: "SUPERVISOR", email: "supervisor@sigea.local" },
+    { role: "ADMIN", email: "admin@sigea.local" },
+  ] as const;
+
+  const copyToClipboard = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success("Copiado");
+    } catch {
+      toast.error("No se pudo copiar");
+    }
+  };
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -83,6 +101,66 @@ export default function LoginPage() {
               {loading ? "Ingresando..." : "Ingresar"}
             </Button>
           </form>
+
+          <div className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              Credenciales demo (copiar)
+            </div>
+            <div className="space-y-2">
+              {demoUsers.map((user) => (
+                <div
+                  key={user.role}
+                  className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2"
+                >
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-900">{user.role}</div>
+                    <div className="truncate text-xs text-slate-600">{user.email}</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEmail(user.email);
+                        setPassword(demoPassword);
+                      }}
+                    >
+                      Usar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9 w-9 px-0"
+                      onClick={() => copyToClipboard(user.email)}
+                      aria-label={`Copiar correo ${user.role}`}
+                      title="Copiar correo"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2">
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-slate-900">Password</div>
+                <div className="truncate font-mono text-xs text-slate-600">{demoPassword}</div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-9 w-9 px-0"
+                onClick={() => copyToClipboard(demoPassword)}
+                aria-label="Copiar password demo"
+                title="Copiar password"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

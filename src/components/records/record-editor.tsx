@@ -89,7 +89,7 @@ export function RecordEditor({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [generating, setGenerating] = useState<"" | "pptx" | "pdf">("");
+  const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-ficha" | "pdf">("");
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
@@ -224,10 +224,16 @@ export function RecordEditor({
     }
   };
 
-  const generateArtifact = async (format: "pptx" | "pdf") => {
-    setGenerating(format);
+  const generateArtifact = async (format: "pptx" | "pdf", template?: "mampara" | "ficha") => {
+    const key = format === "pptx" ? (`pptx-${template || "mampara"}` as const) : "pdf";
+    setGenerating(key);
     try {
-      const response = await fetch(`/api/records/${record.id}/generate?format=${format}`, {
+      const query = new URLSearchParams({ format });
+      if (format === "pptx" && template) {
+        query.set("template", template);
+      }
+
+      const response = await fetch(`/api/records/${record.id}/generate?${query.toString()}`, {
         method: "POST",
       });
       const json = await response.json();
@@ -290,11 +296,31 @@ export function RecordEditor({
                 <Send className="h-4 w-4" /> {item.label}
               </Button>
             ))}
-            <Button size="sm" variant="outline" disabled={generating !== ""} onClick={() => generateArtifact("pptx")}>
-              <FileDown className="h-4 w-4" /> {generating === "pptx" ? "Generando..." : "Generar PPTX"}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={generating !== ""}
+              onClick={() => generateArtifact("pptx", "mampara")}
+            >
+              <FileDown className="h-4 w-4" />{" "}
+              {generating === "pptx-mampara" ? "Generando..." : "Generar PPTX (Mampara)"}
             </Button>
-            <Button size="sm" variant="outline" disabled={generating !== ""} onClick={() => generateArtifact("pdf")}>
-              <FileDown className="h-4 w-4" /> {generating === "pdf" ? "Generando..." : "Generar PDF"}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={generating !== ""}
+              onClick={() => generateArtifact("pptx", "ficha")}
+            >
+              <FileDown className="h-4 w-4" />{" "}
+              {generating === "pptx-ficha" ? "Generando..." : "Generar PPTX (Ficha)"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={generating !== ""}
+              onClick={() => generateArtifact("pdf")}
+            >
+              <FileDown className="h-4 w-4" /> {generating === "pdf" ? "Generando..." : "Generar PDF (Ficha)"}
             </Button>
             {canDeleteRecord(role) ? (
               <Button size="sm" variant="destructive" onClick={deleteRecord}>

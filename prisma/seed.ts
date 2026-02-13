@@ -1,5 +1,7 @@
 import { CurrentArea, ModuleOwner, PrismaClient, RecordStatus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const prisma = new PrismaClient();
 
@@ -121,8 +123,9 @@ async function main() {
 
   const existingRecord = await prisma.record.findFirst({ where: { caseId: oneCase.id } });
 
-  if (!existingRecord) {
-    await prisma.record.create({
+  const seedRecord =
+    existingRecord ??
+    (await prisma.record.create({
       data: {
         caseId: oneCase.id,
         payload: samplePayload,
@@ -133,6 +136,36 @@ async function main() {
         createdById: flagrancia.id,
         lastEditedById: flagrancia.id,
         lastEditedAt: new Date(),
+      },
+    }));
+
+  // Agrega evidencia imagen demo para probar la mampara (foto se toma de la primera evidencia imagen).
+  const existingImageEvidence = await prisma.evidence.findFirst({
+    where: {
+      recordId: seedRecord.id,
+      contentType: { in: ["image/png", "image/jpeg", "image/jpg", "image/webp"] },
+    },
+  });
+
+  if (!existingImageEvidence) {
+    const uploadDir = path.resolve(process.env.UPLOAD_DIR || "./storage/evidence");
+    const sourcePhoto = path.resolve("assets/demo/sample-photo.png");
+    const filename = `seed-${seedRecord.id}-photo.png`;
+    const destPath = path.join(uploadDir, filename);
+
+    await fs.mkdir(uploadDir, { recursive: true });
+    await fs.copyFile(sourcePhoto, destPath);
+    const stat = await fs.stat(destPath);
+
+    await prisma.evidence.create({
+      data: {
+        recordId: seedRecord.id,
+        filename,
+        originalName: "sample-photo.png",
+        contentType: "image/png",
+        sizeBytes: stat.size,
+        storagePath: destPath,
+        uploadedById: flagrancia.id,
       },
     });
   }
