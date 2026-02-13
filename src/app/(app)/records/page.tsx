@@ -39,7 +39,7 @@ export default async function RecordsListPage() {
           <CardTitle>Fichas</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Lista global de fichas (todas las areas). Para crear una ficha nueva, primero abre un caso.
           </p>
         </CardContent>

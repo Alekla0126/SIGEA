@@ -145,7 +145,7 @@ export function CasesBoard({
         {cases.length === 0 ? (
           <Card className="md:col-span-2 xl:col-span-3">
             <CardContent className="py-8">
-              <p className="text-sm text-slate-500">No hay casos registrados.</p>
+              <p className="text-sm text-muted-foreground">No hay casos registrados.</p>
             </CardContent>
           </Card>
         ) : null}
@@ -161,8 +161,8 @@ export function CasesBoard({
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-slate-600">{item.description || "Sin descripcion"}</p>
-              <div className="text-xs text-slate-500">
+              <p className="text-sm text-muted-foreground">{item.description || "Sin descripcion"}</p>
+              <div className="text-xs text-muted-foreground">
                 Fichas: {item._count.records} · Creado por {item.createdBy.name}
               </div>
               <div className="flex items-center gap-2">

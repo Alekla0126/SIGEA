@@ -2,10 +2,10 @@ import React from "react";
 import { pdf, type DocumentProps } from "@react-pdf/renderer";
 
 import type { FichaPayload } from "@/lib/validators";
-import { SigeaPdf } from "@/server/docgen/pdf";
+import { SigeaFichaPdf } from "@/server/docgen/pdf";
 import { generateFichaPptx } from "@/server/docgen/ficha";
 import { generateMamparaPptx, type MamparaPptxOptions } from "@/server/docgen/mampara";
-import { mapPayloadToTemplate } from "@/server/docgen/template";
+import { mapPayloadToFichaBoxes } from "@/server/docgen/ficha-layout";
 
 export type PptxTemplate = "mampara" | "ficha";
 
@@ -24,8 +24,8 @@ export async function generatePptx(payload: FichaPayload, options: GeneratePptxO
 }
 
 export async function generatePdf(payload: FichaPayload) {
-  const mapped = mapPayloadToTemplate(payload);
-  const documentElement = React.createElement(SigeaPdf, {
+  const mapped = mapPayloadToFichaBoxes(payload);
+  const documentElement = React.createElement(SigeaFichaPdf, {
     agencyName: payload.agencyName,
     reportTitle: payload.reportTitle,
     mapped,

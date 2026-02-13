@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito_Sans, Source_Serif_4 } from "next/font/google";
 
+import { ThemeProvider } from "@/components/theme-provider";
 import { AppToaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -25,10 +26,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className={`${nunitoSans.variable} ${sourceSerif.variable} antialiased`}>
-        {children}
-        <AppToaster />
+        <ThemeProvider>
+          {children}
+          <AppToaster />
+        </ThemeProvider>
       </body>
     </html>
   );

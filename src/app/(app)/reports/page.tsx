@@ -70,7 +70,7 @@ export default async function ReportsPage() {
           <CardTitle>KPIs SIGEA</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Tablero operativo para seguimiento de productividad, revision y salida documental.
           </p>
         </CardContent>
@@ -90,9 +90,9 @@ export default async function ReportsPage() {
             <CardTitle>Estatus de fichas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {statusCounts.length === 0 ? <p className="text-sm text-slate-500">Sin datos.</p> : null}
+            {statusCounts.length === 0 ? <p className="text-sm text-muted-foreground">Sin datos.</p> : null}
             {statusCounts.map((entry) => (
-              <p key={entry.status} className="text-sm text-slate-700">
+              <p key={entry.status} className="text-sm text-muted-foreground">
                 {recordStatusLabel(entry.status)}: {entry._count._all}
               </p>
             ))}
@@ -103,9 +103,9 @@ export default async function ReportsPage() {
             <CardTitle>Documentos generados</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {artifactsByFormat.length === 0 ? <p className="text-sm text-slate-500">Sin datos.</p> : null}
+            {artifactsByFormat.length === 0 ? <p className="text-sm text-muted-foreground">Sin datos.</p> : null}
             {artifactsByFormat.map((entry) => (
-              <p key={entry.format} className="text-sm text-slate-700">
+              <p key={entry.format} className="text-sm text-muted-foreground">
                 {entry.format}: {entry._count._all}
               </p>
             ))}
@@ -119,12 +119,12 @@ export default async function ReportsPage() {
         </CardHeader>
         <CardContent>
           {monthly.length === 0 ? (
-            <p className="text-sm text-slate-500">Sin datos.</p>
+            <p className="text-sm text-muted-foreground">Sin datos.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="py-2 pr-3">Mes</th>
                     <th className="py-2 pr-3">Casos</th>
                     <th className="py-2 pr-3">Fichas</th>
@@ -137,15 +137,15 @@ export default async function ReportsPage() {
                 </thead>
                 <tbody>
                   {monthly.map((row) => (
-                    <tr key={row.monthKey} className="border-b border-slate-100">
-                      <td className="py-2 pr-3 font-medium text-slate-900">{monthLabelEs(row.monthKey)}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.cases}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.records}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.approved}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.needsChanges}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.evidence}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.pptx}</td>
-                      <td className="py-2 pr-3 text-slate-700">{row.pdf}</td>
+                    <tr key={row.monthKey} className="border-b border-border/60">
+                      <td className="py-2 pr-3 font-medium text-foreground">{monthLabelEs(row.monthKey)}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.cases}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.records}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.approved}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.needsChanges}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.evidence}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.pptx}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{row.pdf}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -162,10 +162,10 @@ function Metric({ title, value }: { title: string; value: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm text-slate-600">{title}</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-semibold text-slate-900">{value}</p>
+        <p className="text-3xl font-semibold text-foreground">{value}</p>
       </CardContent>
     </Card>
   );

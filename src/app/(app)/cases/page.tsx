@@ -42,7 +42,7 @@ export default async function CasesPage() {
           <CardTitle>Casos y fichas consecutivas</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Flujo oficial: Flagrancia / MP capturan y Litigacion edita fichas existentes sin crear ni borrar.
           </p>
         </CardContent>

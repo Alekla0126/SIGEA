@@ -195,8 +195,8 @@ export function AdminPanel() {
 
           <div className="space-y-2">
             {users.map((user) => (
-              <div key={user.id} className="flex flex-wrap items-center justify-between rounded-md border border-slate-200 p-3">
-                <p className="text-sm text-slate-700">{user.name} · {user.email} · {user.role}</p>
+              <div key={user.id} className="flex flex-wrap items-center justify-between rounded-md border border-border p-3">
+                <p className="text-sm">{user.name} · {user.email} · {user.role}</p>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => toggleUser(user)}>
                     {user.isActive ? "Desactivar" : "Activar"}
@@ -232,8 +232,8 @@ export function AdminPanel() {
 
           <div className="space-y-2">
             {catalogs.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center justify-between rounded-md border border-slate-200 p-3">
-                <p className="text-sm text-slate-700">{item.category} · {item.code} · {item.label}</p>
+              <div key={item.id} className="flex flex-wrap items-center justify-between rounded-md border border-border p-3">
+                <p className="text-sm">{item.category} · {item.code} · {item.label}</p>
                 <Button size="sm" variant="destructive" onClick={() => deleteCatalog(item.id)}>Borrar</Button>
               </div>
             ))}

@@ -284,9 +284,9 @@ export function RecordEditor({
             <StatusBadge status={record.status} />
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-slate-600">
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            Caso: <Link href={`/cases/${record.case.id}`} className="font-semibold text-slate-900 underline">{record.case.folio}</Link> · {record.case.title}
+            Caso: <Link href={`/cases/${record.case.id}`} className="font-semibold underline">{record.case.folio}</Link> · {record.case.title}
           </p>
           <p>
             Version: {record.version} · Area actual: {record.currentArea} · Module owner: {record.moduleOwner}
@@ -476,7 +476,7 @@ export function RecordEditor({
                   </Select>
                 </Field>
                 <Field label="Violencia de genero">
-                  <div className="flex h-10 items-center rounded-md border border-slate-300 px-3">
+                  <div className="flex h-10 items-center rounded-md border border-input px-3">
                     <input
                       id="violenciaGenero"
                       type="checkbox"
@@ -515,12 +515,16 @@ export function RecordEditor({
               <Upload className="h-4 w-4" />
             </Button>
           </div>
-          {record.evidences.length === 0 ? <p className="text-sm text-slate-500">No hay evidencias cargadas.</p> : null}
+          {record.evidences.length === 0 ? <p className="text-sm text-muted-foreground">No hay evidencias cargadas.</p> : null}
           {record.evidences.map((evidence) => (
-            <div key={evidence.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 p-3">
+            <div
+              key={evidence.id}
+              id={`evidence-${evidence.id}`}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3"
+            >
               <div>
-                <p className="text-sm font-medium text-slate-900">{evidence.originalName}</p>
-                <p className="text-xs text-slate-500">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
+                <p className="text-sm font-medium text-card-foreground">{evidence.originalName}</p>
+                <p className="text-xs text-muted-foreground">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
               </div>
               <div className="flex items-center gap-2">
                 <a href={`/api/evidence/${evidence.id}/download`} target="_blank" rel="noreferrer">
@@ -544,9 +548,9 @@ export function RecordEditor({
           <CardTitle>Historial de estado</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {record.statusTransitions.length === 0 ? <p className="text-sm text-slate-500">Sin transiciones.</p> : null}
+          {record.statusTransitions.length === 0 ? <p className="text-sm text-muted-foreground">Sin transiciones.</p> : null}
           {record.statusTransitions.map((transition) => (
-            <p key={transition.id} className="text-xs text-slate-600">
+            <p key={transition.id} className="text-xs text-muted-foreground">
               {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} ·{" "}
               {recordStatusLabel(transition.fromStatus)} -&gt; {recordStatusLabel(transition.toStatus)}
               {transition.comment ? ` (${transition.comment})` : ""}
@@ -560,12 +564,16 @@ export function RecordEditor({
           <CardTitle>Artefactos generados</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {record.artifacts.length === 0 ? <p className="text-sm text-slate-500">Aun no se han generado documentos.</p> : null}
+          {record.artifacts.length === 0 ? <p className="text-sm text-muted-foreground">Aun no se han generado documentos.</p> : null}
           {record.artifacts.map((artifact) => (
-            <div key={artifact.id} className="flex items-center justify-between rounded-md border border-slate-200 p-3">
+            <div
+              key={artifact.id}
+              id={`artifact-${artifact.id}`}
+              className="flex items-center justify-between rounded-md border border-border p-3"
+            >
               <div>
-                <p className="text-sm font-medium text-slate-900">{artifact.format} · {artifact.fileName}</p>
-                <p className="text-xs text-slate-500">{new Date(artifact.createdAt).toLocaleString()}</p>
+                <p className="text-sm font-medium text-card-foreground">{artifact.format} · {artifact.fileName}</p>
+                <p className="text-xs text-muted-foreground">{new Date(artifact.createdAt).toLocaleString()}</p>
               </div>
               <a href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">
                 <Button size="sm" variant="outline">
@@ -591,8 +599,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 rounded-lg border border-slate-200 p-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">{title}</h3>
+    <section className="space-y-3 rounded-lg border border-border p-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
       {children}
     </section>
   );

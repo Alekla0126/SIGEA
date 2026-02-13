@@ -11,7 +11,7 @@ export default function ForbiddenPage() {
           <CardTitle>Acceso denegado</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Tu rol no tiene permiso para esta accion. Si necesitas acceso, solicita actualizacion al administrador.
           </p>
           <Link href="/cases">

@@ -59,7 +59,7 @@ export function RecordsBoard({ initialRecords }: { initialRecords: RecordListIte
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-600">Estatus</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estatus</div>
             <Select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as "ALL" | RecordStatus)}
@@ -83,7 +83,7 @@ export function RecordsBoard({ initialRecords }: { initialRecords: RecordListIte
         {records.length === 0 ? (
           <Card className="md:col-span-2 xl:col-span-3">
             <CardContent className="py-8">
-              <p className="text-sm text-slate-500">No hay fichas para el filtro seleccionado.</p>
+              <p className="text-sm text-muted-foreground">No hay fichas para el filtro seleccionado.</p>
             </CardContent>
           </Card>
         ) : null}
@@ -102,13 +102,13 @@ export function RecordsBoard({ initialRecords }: { initialRecords: RecordListIte
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-muted-foreground">
                 v{item.version} · Area: {item.currentArea} · Owner: {item.moduleOwner}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-muted-foreground">
                 Evidencias: {item._count.evidences} · Documentos: {item._count.artifacts}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-muted-foreground">
                 Actualizada: {new Date(item.updatedAt).toLocaleString()}
               </div>
               <div className="flex items-center gap-2">

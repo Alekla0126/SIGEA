@@ -64,9 +64,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#0f172a,#1f4d66)] px-4 py-12">
-      <Card className="w-full max-w-md border-white/20 bg-white/95 shadow-2xl backdrop-blur">
+      <Card className="w-full max-w-md border-border/60 bg-card/95 shadow-2xl backdrop-blur">
         <CardHeader>
-          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#1f4d66] text-white">
+          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <ShieldCheck className="h-5 w-5" />
           </div>
           <CardTitle>Acceso SIGEA</CardTitle>
@@ -102,19 +102,19 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <div className="mt-6 space-y-3 rounded-lg border border-border bg-muted p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Credenciales demo (copiar)
             </div>
             <div className="space-y-2">
               {demoUsers.map((user) => (
                 <div
                   key={user.role}
-                  className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2"
+                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
                 >
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900">{user.role}</div>
-                    <div className="truncate text-xs text-slate-600">{user.email}</div>
+                    <div className="text-xs font-semibold">{user.role}</div>
+                    <div className="truncate text-xs text-muted-foreground">{user.email}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Button
@@ -143,10 +143,10 @@ export default function LoginPage() {
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2">
+            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2">
               <div className="min-w-0">
-                <div className="text-xs font-semibold text-slate-900">Password</div>
-                <div className="truncate font-mono text-xs text-slate-600">{demoPassword}</div>
+                <div className="text-xs font-semibold">Password</div>
+                <div className="truncate font-mono text-xs text-muted-foreground">{demoPassword}</div>
               </div>
               <Button
                 type="button"

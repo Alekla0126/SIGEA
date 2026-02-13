@@ -3,11 +3,52 @@
 :root {
   --background: #eef2f9;
   --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #1f4d66;
+  --primary: #1f4d66;
+  --primary-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --app-gradient: radial-gradient(circle_at_top_left,#f8fafc,#e2e8f0);
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #e2e8f0;
+  --card: #0b1220;
+  --card-foreground: #e2e8f0;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  --border: #1f2937;
+  --input: #334155;
+  --ring: #38bdf8;
+  --primary: #1f4d66;
+  --primary-foreground: #e2e8f0;
+  --destructive: #ef4444;
+  --destructive-foreground: #0b1220;
+  --app-gradient: radial-gradient(circle_at_top_left,rgba(56,189,248,0.14),transparent 55%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.10),transparent 50%),linear-gradient(#0b1220,#020617);
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --font-sans: var(--font-nunito-sans);
   --font-serif: var(--font-source-serif);
 }

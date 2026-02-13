@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Copy, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -68,6 +68,7 @@ export function CaseDetailView({
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
+  const [cloningId, setCloningId] = useState<string>("");
 
   const createRecord = async () => {
     setCreating(true);
@@ -105,6 +106,28 @@ export function CaseDetailView({
     }
   };
 
+  const cloneRecord = async (recordId: string) => {
+    setCloningId(recordId);
+    try {
+      const response = await fetch(`/api/records/${recordId}/clone`, {
+        method: "POST",
+      });
+
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo clonar ficha");
+      }
+
+      toast.success(`Ficha clonada en estado ${recordStatusLabel("DRAFT")}`);
+      router.push(`/records/${json.data.id}`);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    } finally {
+      setCloningId("");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -114,13 +137,13 @@ export function CaseDetailView({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-slate-600">{data.description || "Sin descripcion"}</p>
+          <p className="text-sm text-muted-foreground">{data.description || "Sin descripcion"}</p>
           {canCreateRecord(role) ? (
             <Button onClick={createRecord} disabled={creating}>
               <Plus className="h-4 w-4" /> {creating ? "Creando ficha..." : "Crear ficha"}
             </Button>
           ) : (
-            <p className="text-sm text-slate-500">Tu rol no puede crear fichas. Solo puedes revisar/editar existentes.</p>
+            <p className="text-sm text-muted-foreground">Tu rol no puede crear fichas. Solo puedes revisar/editar existentes.</p>
           )}
         </CardContent>
       </Card>
@@ -130,13 +153,13 @@ export function CaseDetailView({
           <CardTitle>Fichas del caso (timeline)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {data.records.length === 0 ? <p className="text-sm text-slate-500">Aun no hay fichas.</p> : null}
+          {data.records.length === 0 ? <p className="text-sm text-muted-foreground">Aun no hay fichas.</p> : null}
           {data.records.map((record) => (
-            <div key={record.id} className="rounded-lg border border-slate-200 p-4">
+            <div key={record.id} className="rounded-lg border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Ficha {record.id.slice(0, 8)}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-semibold">Ficha {record.id.slice(0, 8)}</p>
+                  <p className="text-xs text-muted-foreground">
                     Owner: {record.moduleOwner} · v{record.version} · {new Date(record.updatedAt).toLocaleString()}
                   </p>
                 </div>
@@ -146,11 +169,23 @@ export function CaseDetailView({
                 <Link href={`/records/${record.id}`}>
                   <Button size="sm">Abrir ficha</Button>
                 </Link>
+                {canCreateRecord(role) ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => cloneRecord(record.id)}
+                    disabled={Boolean(cloningId)}
+                    title="Crear una nueva ficha copiando la informacion de esta"
+                  >
+                    <Copy className="h-4 w-4" />
+                    {cloningId === record.id ? "Clonando..." : "Clonar"}
+                  </Button>
+                ) : null}
               </div>
               {record.statusTransitions.length > 0 ? (
-                <div className="mt-4 space-y-2 rounded-md bg-slate-50 p-3">
+                <div className="mt-4 space-y-2 rounded-md bg-muted p-3">
                   {record.statusTransitions.map((transition) => (
-                    <p key={transition.id} className="text-xs text-slate-600">
+                    <p key={transition.id} className="text-xs text-muted-foreground">
                       {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} ·{" "}
                       {recordStatusLabel(transition.fromStatus)} -&gt; {recordStatusLabel(transition.toStatus)}
                       {transition.comment ? ` (${transition.comment})` : ""}
@@ -168,9 +203,9 @@ export function CaseDetailView({
           <CardTitle>Auditoria reciente</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {data.audits.length === 0 ? <p className="text-sm text-slate-500">Sin eventos registrados.</p> : null}
+          {data.audits.length === 0 ? <p className="text-sm text-muted-foreground">Sin eventos registrados.</p> : null}
           {data.audits.slice(0, 20).map((audit) => (
-            <p key={audit.id} className="text-xs text-slate-600">
+            <p key={audit.id} className="text-xs text-muted-foreground">
               {new Date(audit.createdAt).toLocaleString()} · {audit.action} {audit.entityType} · {audit.user.name}
             </p>
           ))}

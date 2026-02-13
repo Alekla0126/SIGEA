@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, CheckCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,11 +13,34 @@ type NotificationItem = {
   title: string;
   message: string;
   type: string;
+  caseId?: string | null;
+  recordId?: string | null;
+  metadata?: unknown;
   isRead: boolean;
   createdAt: string;
 };
 
+function notificationHref(item: NotificationItem) {
+  if (item.recordId) {
+    const meta = item.metadata as { evidenceId?: string; artifactId?: string } | null;
+    if (meta?.evidenceId) {
+      return `/records/${item.recordId}#evidence-${meta.evidenceId}`;
+    }
+    if (meta?.artifactId) {
+      return `/records/${item.recordId}#artifact-${meta.artifactId}`;
+    }
+    return `/records/${item.recordId}`;
+  }
+
+  if (item.caseId) {
+    return `/cases/${item.caseId}`;
+  }
+
+  return null;
+}
+
 export function NotificationPanel() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,6 +83,21 @@ export function NotificationPanel() {
     }
   };
 
+  const openItem = (item: NotificationItem) => {
+    const href = notificationHref(item);
+    if (!href) {
+      return;
+    }
+
+    setOpen(false);
+    if (!item.isRead) {
+      markRead(item.id).catch(() => {
+        // ignore
+      });
+    }
+    router.push(href);
+  };
+
   return (
     <div className="relative">
       <Button variant="outline" size="sm" onClick={() => setOpen((value) => !value)}>
@@ -75,25 +114,40 @@ export function NotificationPanel() {
             <CardTitle className="text-sm">Bandeja interna</CardTitle>
           </CardHeader>
           <CardContent className="max-h-96 space-y-3 overflow-auto pb-4">
-            {items.length === 0 ? <p className="text-sm text-slate-500">Sin notificaciones.</p> : null}
+            {items.length === 0 ? <p className="text-sm text-muted-foreground">Sin notificaciones.</p> : null}
             {items.map((item) => (
-              <div key={item.id} className="rounded-md border border-slate-200 p-3">
+              <div
+                key={item.id}
+                className="group cursor-pointer rounded-md border border-border p-3 hover:bg-muted"
+                role="button"
+                tabIndex={0}
+                onClick={() => openItem(item)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openItem(item);
+                  }
+                }}
+              >
                 <div className="mb-1 flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                  <p className="text-sm font-semibold">{item.title}</p>
                   {!item.isRead ? (
                     <Button
                       size="sm"
                       variant="ghost"
                       disabled={loading}
-                      onClick={() => markRead(item.id)}
-                      className="h-auto px-1 py-0 text-slate-500"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        markRead(item.id);
+                      }}
+                      className="h-auto px-1 py-0 text-muted-foreground"
                     >
                       <CheckCheck className="h-4 w-4" />
                     </Button>
                   ) : null}
                 </div>
-                <p className="text-sm text-slate-600">{item.message}</p>
-                <p className="mt-2 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">{item.message}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</p>
               </div>
             ))}
           </CardContent>

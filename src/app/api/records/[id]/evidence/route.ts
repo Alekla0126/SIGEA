@@ -71,6 +71,7 @@ export async function POST(
     caseId: record.caseId,
     recordId,
     roles: ["FLAGRANCIA", "MP", "LITIGACION", "SUPERVISOR", "ADMIN"],
+    metadata: { evidenceId: evidence.id },
   });
 
   return ok(evidence, 201);

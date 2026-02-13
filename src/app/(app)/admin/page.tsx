@@ -12,7 +12,7 @@ export default async function AdminPage() {
           <CardTitle>Administracion SIGEA</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Alta/baja de usuarios y catalogos por rol ADMIN.
           </p>
         </CardContent>
