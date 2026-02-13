@@ -26,7 +26,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
           <Link href="/cases" className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100">
             <FolderKanban className="h-4 w-4" /> Casos
           </Link>
-          <Link href="/cases" className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100">
+          <Link href="/records" className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100">
             <FileText className="h-4 w-4" /> Fichas
           </Link>
           <Link href="/reports" className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-slate-100">

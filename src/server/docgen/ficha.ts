@@ -8,7 +8,6 @@ import { fitTextToBox } from "@/server/docgen/text-fit";
 
 type BorderProps = PptxGenJS.BorderProps;
 type TableCell = PptxGenJS.TableCell;
-type TableCellProps = PptxGenJS.TableCellProps;
 type TableProps = PptxGenJS.TableProps;
 type TableRow = PptxGenJS.TableRow;
 

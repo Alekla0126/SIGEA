@@ -14,7 +14,8 @@ import {
   canUpdateRecord,
 } from "@/lib/client-rbac";
 import { emptyRecordForm, recordFormSchema, type RecordFormInput } from "@/lib/client-schemas";
-import type { Role } from "@/lib/types";
+import { recordStatusLabel } from "@/lib/labels";
+import type { RecordStatus, Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,8 +52,8 @@ type RecordEditorData = {
   }[];
   statusTransitions: {
     id: string;
-    fromStatus: string;
-    toStatus: string;
+    fromStatus: RecordStatus;
+    toStatus: RecordStatus;
     comment: string;
     createdAt: string;
     changedByUser: {
@@ -170,7 +171,7 @@ export function RecordEditor({
         throw new Error(json.error || "No se pudo cambiar estatus");
       }
 
-      toast.success(`Estatus actualizado a ${toStatus}`);
+      toast.success(`Estatus actualizado a ${recordStatusLabel(toStatus)}`);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error");
@@ -402,7 +403,7 @@ export function RecordEditor({
             </Section>
 
             <Section title="6) Hecho">
-              <Field label="Descripcion (min 20 para READY)">
+              <Field label={`Descripcion (min 20 para ${recordStatusLabel("READY")})`}>
                 <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
               </Field>
             </Section>
@@ -546,7 +547,8 @@ export function RecordEditor({
           {record.statusTransitions.length === 0 ? <p className="text-sm text-slate-500">Sin transiciones.</p> : null}
           {record.statusTransitions.map((transition) => (
             <p key={transition.id} className="text-xs text-slate-600">
-              {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} · {transition.fromStatus} -&gt; {transition.toStatus}
+              {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} ·{" "}
+              {recordStatusLabel(transition.fromStatus)} -&gt; {recordStatusLabel(transition.toStatus)}
               {transition.comment ? ` (${transition.comment})` : ""}
             </p>
           ))}

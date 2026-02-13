@@ -1,6 +1,7 @@
 import { AuditAction, EntityType, NotificationType } from "@prisma/client";
 
 import { fail, ok, parseBody, requireApiUser } from "@/lib/api";
+import { recordStatusLabel } from "@/lib/labels";
 import { canChangeStatus } from "@/lib/rbac";
 import { statusChangeSchema, validateReadyPayload, fichaPayloadSchema } from "@/lib/validators";
 import { prisma } from "@/lib/prisma";
@@ -32,7 +33,7 @@ export async function POST(
   }
 
   if (parsed.data.toStatus === "NEEDS_CHANGES" && parsed.data.comment.trim().length === 0) {
-    return fail("Comentario obligatorio para NEEDS_CHANGES", 400);
+    return fail(`Comentario obligatorio para ${recordStatusLabel("NEEDS_CHANGES")}`, 400);
   }
 
   const payloadResult = fichaPayloadSchema.safeParse(current.payload);
@@ -43,7 +44,7 @@ export async function POST(
   if (parsed.data.toStatus === "READY") {
     const readyErrors = validateReadyPayload(payloadResult.data);
     if (readyErrors.length > 0) {
-      return fail("No se puede marcar READY", 422, readyErrors);
+      return fail(`No se puede marcar ${recordStatusLabel("READY")}`, 422, readyErrors);
     }
   }
 
@@ -89,7 +90,7 @@ export async function POST(
     await notify({
       type: NotificationType.RECORD_READY_FOR_REVIEW,
       title: "Ficha lista para revision",
-      message: `La ficha ${id.slice(0, 8)} fue enviada a READY por ${auth.user.name}`,
+      message: `La ficha ${id.slice(0, 8)} fue enviada a ${recordStatusLabel("READY")} por ${auth.user.name}`,
       caseId: current.caseId,
       recordId: id,
       roles: ["LITIGACION", "SUPERVISOR", "ADMIN"],

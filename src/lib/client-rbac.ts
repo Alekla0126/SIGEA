@@ -1,4 +1,5 @@
 import { type RecordStatus, type Role } from "@/lib/types";
+import { recordStatusLabel } from "@/lib/labels";
 
 export function canCreateCase(role: Role) {
   return role === "FLAGRANCIA" || role === "MP" || role === "ADMIN";
@@ -42,11 +43,11 @@ export function allowedTransitions(
   litigacionReadyEnabled: boolean,
 ): Array<{ toStatus: RecordStatus; label: string }> {
   if (status === "DRAFT" && canMoveToReady(role, litigacionReadyEnabled)) {
-    return [{ toStatus: "READY", label: "Enviar a READY" }];
+    return [{ toStatus: "READY", label: `Enviar a ${recordStatusLabel("READY")}` }];
   }
 
   if (status === "NEEDS_CHANGES" && canMoveToReady(role, litigacionReadyEnabled)) {
-    return [{ toStatus: "READY", label: "Reenviar a READY" }];
+    return [{ toStatus: "READY", label: `Reenviar a ${recordStatusLabel("READY")}` }];
   }
 
   if (status === "READY" && canSupervise(role)) {

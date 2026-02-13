@@ -8,7 +8,8 @@ import { toast } from "sonner";
 
 import { canCreateRecord } from "@/lib/client-rbac";
 import { emptyRecordForm } from "@/lib/client-schemas";
-import type { Role } from "@/lib/types";
+import { recordStatusLabel } from "@/lib/labels";
+import type { RecordStatus, Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -27,8 +28,8 @@ type CaseRecord = {
   };
   statusTransitions: {
     id: string;
-    fromStatus: string;
-    toStatus: string;
+    fromStatus: RecordStatus;
+    toStatus: RecordStatus;
     comment: string;
     createdAt: string;
     changedByUser: {
@@ -94,7 +95,7 @@ export function CaseDetailView({
         throw new Error(json.error || "No se pudo crear ficha");
       }
 
-      toast.success("Ficha creada en estado DRAFT");
+      toast.success(`Ficha creada en estado ${recordStatusLabel("DRAFT")}`);
       router.push(`/records/${json.data.id}`);
       router.refresh();
     } catch (error) {
@@ -150,7 +151,8 @@ export function CaseDetailView({
                 <div className="mt-4 space-y-2 rounded-md bg-slate-50 p-3">
                   {record.statusTransitions.map((transition) => (
                     <p key={transition.id} className="text-xs text-slate-600">
-                      {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} · {transition.fromStatus} -&gt; {transition.toStatus}
+                      {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} ·{" "}
+                      {recordStatusLabel(transition.fromStatus)} -&gt; {recordStatusLabel(transition.toStatus)}
                       {transition.comment ? ` (${transition.comment})` : ""}
                     </p>
                   ))}

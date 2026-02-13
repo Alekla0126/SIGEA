@@ -1,6 +1,7 @@
 import { requireSessionPage } from "@/lib/page-auth";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { recordStatusLabel } from "@/lib/labels";
 
 export default async function ReportsPage() {
   await requireSessionPage("report:read");
@@ -23,6 +24,45 @@ export default async function ReportsPage() {
     prisma.artifact.groupBy({ by: ["format"], _count: { _all: true } }),
   ]);
 
+  const monthsToShow = 12;
+  const monthKeys = buildRecentMonthKeysUtc(monthsToShow);
+  const oldestMonthStart = startOfMonthUtc(parseMonthKeyUtc(monthKeys[0] ?? monthKeyUtc(new Date())));
+
+  const [casesRecent, recordsRecent, evidenceRecent, artifactsRecent, transitionsRecent] = await Promise.all([
+    prisma.case.findMany({
+      where: { createdAt: { gte: oldestMonthStart } },
+      select: { createdAt: true },
+    }),
+    prisma.record.findMany({
+      where: { createdAt: { gte: oldestMonthStart } },
+      select: { createdAt: true },
+    }),
+    prisma.evidence.findMany({
+      where: { createdAt: { gte: oldestMonthStart } },
+      select: { createdAt: true },
+    }),
+    prisma.artifact.findMany({
+      where: { createdAt: { gte: oldestMonthStart } },
+      select: { createdAt: true, format: true },
+    }),
+    prisma.statusTransition.findMany({
+      where: {
+        createdAt: { gte: oldestMonthStart },
+        toStatus: { in: ["APPROVED", "NEEDS_CHANGES"] },
+      },
+      select: { createdAt: true, toStatus: true },
+    }),
+  ]);
+
+  const monthly = makeMonthlyKpis({
+    monthKeys,
+    cases: casesRecent,
+    records: recordsRecent,
+    evidence: evidenceRecent,
+    artifacts: artifactsRecent,
+    transitions: transitionsRecent,
+  });
+
   return (
     <div className="space-y-6">
       <Card>
@@ -41,7 +81,7 @@ export default async function ReportsPage() {
         <Metric title="Fichas" value={totalRecords} />
         <Metric title="Evidencias" value={totalEvidence} />
         <Metric title="Aprobadas" value={totalApproved} />
-        <Metric title="Needs Changes" value={totalNeedsChanges} />
+        <Metric title="Requieren cambios" value={totalNeedsChanges} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -53,7 +93,7 @@ export default async function ReportsPage() {
             {statusCounts.length === 0 ? <p className="text-sm text-slate-500">Sin datos.</p> : null}
             {statusCounts.map((entry) => (
               <p key={entry.status} className="text-sm text-slate-700">
-                {entry.status}: {entry._count._all}
+                {recordStatusLabel(entry.status)}: {entry._count._all}
               </p>
             ))}
           </CardContent>
@@ -72,6 +112,48 @@ export default async function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>KPIs por mes (ultimos {monthsToShow} meses)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {monthly.length === 0 ? (
+            <p className="text-sm text-slate-500">Sin datos.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="py-2 pr-3">Mes</th>
+                    <th className="py-2 pr-3">Casos</th>
+                    <th className="py-2 pr-3">Fichas</th>
+                    <th className="py-2 pr-3">Aprobadas</th>
+                    <th className="py-2 pr-3">Cambios</th>
+                    <th className="py-2 pr-3">Evidencias</th>
+                    <th className="py-2 pr-3">PPTX</th>
+                    <th className="py-2 pr-3">PDF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthly.map((row) => (
+                    <tr key={row.monthKey} className="border-b border-slate-100">
+                      <td className="py-2 pr-3 font-medium text-slate-900">{monthLabelEs(row.monthKey)}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.cases}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.records}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.approved}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.needsChanges}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.evidence}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.pptx}</td>
+                      <td className="py-2 pr-3 text-slate-700">{row.pdf}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -87,4 +169,117 @@ function Metric({ title, value }: { title: string; value: number }) {
       </CardContent>
     </Card>
   );
+}
+
+type MonthKey = `${number}-${string}`;
+
+function monthKeyUtc(date: Date): MonthKey {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function parseMonthKeyUtc(key: MonthKey) {
+  const [yRaw, mRaw] = key.split("-");
+  const y = Number(yRaw);
+  const m = Number(mRaw);
+  return new Date(Date.UTC(y, Math.max(0, m - 1), 1, 0, 0, 0, 0));
+}
+
+function startOfMonthUtc(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0));
+}
+
+function addMonthsUtc(date: Date, delta: number) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + delta, 1, 0, 0, 0, 0));
+}
+
+function buildRecentMonthKeysUtc(count: number) {
+  const capped = Math.max(1, Math.min(36, count));
+  const now = startOfMonthUtc(new Date());
+  const keys: MonthKey[] = [];
+  for (let i = capped - 1; i >= 0; i -= 1) {
+    keys.push(monthKeyUtc(addMonthsUtc(now, -i)));
+  }
+  return keys;
+}
+
+function monthLabelEs(key: MonthKey) {
+  const [yRaw, mRaw] = key.split("-");
+  const year = yRaw;
+  const month = Number(mRaw);
+  const names = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+  const name = names[Math.max(1, Math.min(12, month)) - 1] || key;
+  return `${name} ${year}`;
+}
+
+type MonthlyKpiRow = {
+  monthKey: MonthKey;
+  cases: number;
+  records: number;
+  evidence: number;
+  approved: number;
+  needsChanges: number;
+  pptx: number;
+  pdf: number;
+};
+
+function makeMonthlyKpis(input: {
+  monthKeys: MonthKey[];
+  cases: Array<{ createdAt: Date }>;
+  records: Array<{ createdAt: Date }>;
+  evidence: Array<{ createdAt: Date }>;
+  artifacts: Array<{ createdAt: Date; format: "PPTX" | "PDF" }>;
+  transitions: Array<{ createdAt: Date; toStatus: string }>;
+}): MonthlyKpiRow[] {
+  const map = new Map<MonthKey, MonthlyKpiRow>();
+
+  for (const key of input.monthKeys) {
+    map.set(key, {
+      monthKey: key,
+      cases: 0,
+      records: 0,
+      evidence: 0,
+      approved: 0,
+      needsChanges: 0,
+      pptx: 0,
+      pdf: 0,
+    });
+  }
+
+  for (const item of input.cases) {
+    const key = monthKeyUtc(item.createdAt);
+    const row = map.get(key);
+    if (row) row.cases += 1;
+  }
+
+  for (const item of input.records) {
+    const key = monthKeyUtc(item.createdAt);
+    const row = map.get(key);
+    if (row) row.records += 1;
+  }
+
+  for (const item of input.evidence) {
+    const key = monthKeyUtc(item.createdAt);
+    const row = map.get(key);
+    if (row) row.evidence += 1;
+  }
+
+  for (const item of input.artifacts) {
+    const key = monthKeyUtc(item.createdAt);
+    const row = map.get(key);
+    if (!row) continue;
+    if (item.format === "PPTX") row.pptx++;
+    if (item.format === "PDF") row.pdf++;
+  }
+
+  for (const item of input.transitions) {
+    const key = monthKeyUtc(item.createdAt);
+    const row = map.get(key);
+    if (!row) continue;
+    if (item.toStatus === "APPROVED") row.approved++;
+    if (item.toStatus === "NEEDS_CHANGES") row.needsChanges++;
+  }
+
+  return Array.from(map.values());
 }

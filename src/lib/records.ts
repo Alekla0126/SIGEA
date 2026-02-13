@@ -22,7 +22,7 @@ export function defaultModuleOwner(role: Role): ModuleOwner {
 
 export function ensureReadyTransitionAllowed(role: Role, fromStatus: RecordStatus, payload: FichaPayload) {
   if (!canChangeStatus(role, fromStatus, "READY")) {
-    return ["No tiene permisos para cambiar a READY"];
+    return ["No tiene permisos para cambiar a LISTO"];
   }
 
   return validateReadyPayload(payload);

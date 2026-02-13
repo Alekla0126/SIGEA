@@ -176,12 +176,12 @@ export function validateReadyPayload(payload: FichaPayload) {
 
   for (const [value, label] of required) {
     if (!value || value.trim().length === 0) {
-      errors.push(`${label} es obligatorio para estado READY`);
+      errors.push(`${label} es obligatorio para estado LISTO`);
     }
   }
 
   if (!payload.hecho.descripcion || payload.hecho.descripcion.trim().length < 20) {
-    errors.push("hecho.descripcion debe contener al menos 20 caracteres para READY");
+    errors.push("hecho.descripcion debe contener al menos 20 caracteres para LISTO");
   }
 
   if (payload.fechaHora.horaInicio && !HOUR_REGEX.test(payload.fechaHora.horaInicio)) {

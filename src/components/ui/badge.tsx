@@ -1,6 +1,7 @@
 import { type HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
+import { recordStatusLabel } from "@/lib/labels";
 
 type BadgeVariant = "default" | "draft" | "ready" | "changes" | "approved";
 
@@ -26,5 +27,5 @@ export function StatusBadge({ status }: { status: "DRAFT" | "READY" | "NEEDS_CHA
           ? "approved"
           : "draft";
 
-  return <Badge className={variantClass[variant]}>{status}</Badge>;
+  return <Badge className={variantClass[variant]}>{recordStatusLabel(status)}</Badge>;
 }
