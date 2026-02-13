@@ -258,6 +258,25 @@ docker compose -p sigea-v1 -f docker-compose.deploy.yml --env-file .env.deploy e
 
 Este despliegue no toca otras instancias porque usa proyecto/volumenes/redes dedicadas y no hace `down` global.
 
+Si tu servidor ya tiene Caddy en 80/443, usa solo `app+db` y enruta desde Caddy host:
+
+- `SIGEA_APP_PORT=3100` en `.env.deploy`
+- agrega sitio en `/etc/caddy/Caddyfile`:
+
+```caddy
+sigea.146.19.143.92.sslip.io {
+  encode gzip
+  reverse_proxy 127.0.0.1:3100
+}
+```
+
+- valida y recarga:
+
+```bash
+caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy
+```
+
 ## Usuarios demo (seed)
 
 Password para todos: `Sigea123!`

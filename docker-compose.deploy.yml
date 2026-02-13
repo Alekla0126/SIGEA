@@ -28,6 +28,8 @@ services:
       ARTIFACT_DIR: /app/storage/artifacts
     volumes:
       - sigea_v1_storage:/app/storage
+    ports:
+      - "${SIGEA_APP_PORT:-3100}:3000"
     networks:
       - sigea_internal
       - sigea_web
@@ -37,6 +39,8 @@ services:
     restart: unless-stopped
     depends_on:
       - app
+    profiles:
+      - edge-caddy
     environment:
       SIGEA_DOMAIN: ${SIGEA_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}
