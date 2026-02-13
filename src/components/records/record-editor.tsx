@@ -494,7 +494,7 @@ export function RecordEditor({
             </Section>
 
             <Button type="submit" disabled={!editable || saving}>
-              <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar DRAFT"}
+              <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar borrador"}
             </Button>
           </form>
         </CardContent>
