@@ -1,12 +1,17 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+# Prisma generate validates schema/env during install; provide a dummy URL for build-time.
+ENV DATABASE_URL="postgresql://sigea:sigea@localhost:5432/sigea?schema=public"
 RUN npm ci
 
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV DATABASE_URL="postgresql://sigea:sigea@localhost:5432/sigea?schema=public"
 RUN npm run build
 
 FROM node:20-alpine AS runner
