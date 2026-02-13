@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sigea-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigea
+      POSTGRES_USER: sigea
+      POSTGRES_PASSWORD: sigea
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sigea-app
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://sigea:sigea@db:5432/sigea?schema=public
+      AUTH_SECRET: change-me
+      LITIGACION_CAN_SET_READY: "true"
+      LITIGACION_CAN_ADD_EVIDENCE: "true"
+      LITIGACION_CAN_DELETE_EVIDENCE: "false"
+      UPLOAD_DIR: ./storage/evidence
+      ARTIFACT_DIR: ./storage/artifacts
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/app/storage
+
+volumes:
+  db_data:

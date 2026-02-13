@@ -1,0 +1,45 @@
+name: Deploy
+
+on:
+  push:
+    branches: [development, staging, main]
+
+jobs:
+  deploy-development:
+    if: github.ref_name == 'development'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy development
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          script: |
+            /opt/sigea/deploy.sh development
+
+  deploy-staging:
+    if: github.ref_name == 'staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy staging
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            /opt/sigea/deploy.sh staging
+
+  deploy-production:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy production
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            /opt/sigea/deploy.sh main

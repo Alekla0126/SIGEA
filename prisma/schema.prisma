@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  FLAGRANCIA
+  MP
+  LITIGACION
+  SUPERVISOR
+  ADMIN
+}
+
+enum ModuleOwner {
+  FLAGRANCIA
+  MP
+}
+
+enum CurrentArea {
+  FLAGRANCIA
+  LITIGACION
+  SUPERVISION
+}
+
+enum RecordStatus {
+  DRAFT
+  READY
+  NEEDS_CHANGES
+  APPROVED
+}
+
+enum NotificationType {
+  RECORD_CREATED
+  RECORD_UPDATED
+  RECORD_READY_FOR_REVIEW
+  RECORD_NEEDS_CHANGES
+  RECORD_APPROVED
+  EVIDENCE_ADDED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+  EVIDENCE
+  GENERATE_ARTIFACT
+}
+
+enum EntityType {
+  CASE
+  RECORD
+  EVIDENCE
+  ARTIFACT
+  NOTIFICATION
+  USER
+  CATALOG
+}
+
+enum ArtifactFormat {
+  PPTX
+  PDF
+}
+
+enum ArtifactStatus {
+  READY
+  FAILED
+}
+
+model User {
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  passwordHash    String
+  role            Role
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  casesCreated    Case[]
+  recordsCreated  Record[]       @relation("RecordCreatedBy")
+  recordsEdited   Record[]       @relation("RecordLastEditedBy")
+  evidenceUploads Evidence[]
+  notifications   Notification[]
+  audits          AuditLog[]
+  artifacts       Artifact[]
+  transitions     StatusTransition[]
+  catalogItems    CatalogItem[]
+}
+
+model Case {
+  id              String         @id @default(cuid())
+  folio           String         @unique
+  title           String
+  description     String         @default("")
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  records         Record[]
+  notifications   Notification[]
+  audits          AuditLog[]
+
+  @@index([createdAt])
+}
+
+model Record {
+  id                String             @id @default(cuid())
+  caseId            String
+  case              Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  payload           Json
+  moduleOwner       ModuleOwner
+  currentArea       CurrentArea        @default(FLAGRANCIA)
+  status            RecordStatus       @default(DRAFT)
+  version           Int                @default(1)
+  lastEditedById    String?
+  lastEditedBy      User?              @relation("RecordLastEditedBy", fields: [lastEditedById], references: [id])
+  lastEditedAt      DateTime?
+  createdById       String
+  createdBy         User               @relation("RecordCreatedBy", fields: [createdById], references: [id])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  evidences         Evidence[]
+  notifications     Notification[]
+  audits            AuditLog[]
+  statusTransitions StatusTransition[]
+  artifacts         Artifact[]
+
+  @@index([caseId, createdAt])
+  @@index([status])
+}
+
+model StatusTransition {
+  id         String       @id @default(cuid())
+  recordId   String
+  record     Record       @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  fromStatus RecordStatus
+  toStatus   RecordStatus
+  comment    String       @default("")
+  changedBy  String
+  changedByUser User      @relation(fields: [changedBy], references: [id])
+  createdAt  DateTime     @default(now())
+
+  @@index([recordId, createdAt])
+}
+
+model Evidence {
+  id            String    @id @default(cuid())
+  recordId      String
+  record        Record    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  filename      String
+  originalName  String
+  contentType   String
+  sizeBytes     Int
+  storagePath   String
+  uploadedById  String
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id])
+  createdAt     DateTime  @default(now())
+
+  @@index([recordId, createdAt])
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  type       NotificationType
+  title      String
+  message    String
+  metadata   Json?
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId     String?
+  case       Case?            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  recordId   String?
+  record     Record?          @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([recordId])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  action     AuditAction
+  entityType EntityType
+  entityId   String
+  diffJson   Json?
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  caseId     String?
+  case       Case?       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  recordId   String?
+  record     Record?     @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Artifact {
+  id            String         @id @default(cuid())
+  recordId       String
+  record         Record         @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  format         ArtifactFormat
+  status         ArtifactStatus @default(READY)
+  fileName       String
+  storagePath    String
+  sizeBytes      Int
+  generatedById  String
+  generatedBy    User           @relation(fields: [generatedById], references: [id])
+  createdAt      DateTime       @default(now())
+
+  @@index([recordId, createdAt])
+}
+
+model CatalogItem {
+  id          String   @id @default(cuid())
+  category    String
+  code        String
+  label       String
+  isActive    Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([category, code])
+  @@index([category, isActive])
+}

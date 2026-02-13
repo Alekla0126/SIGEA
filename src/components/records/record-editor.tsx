@@ -1,0 +1,571 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import {
+  allowedTransitions,
+  canDeleteRecord,
+  canUpdateRecord,
+} from "@/lib/client-rbac";
+import { emptyRecordForm, recordFormSchema, type RecordFormInput } from "@/lib/client-schemas";
+import type { Role } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+
+type RecordEditorData = {
+  id: string;
+  status: "DRAFT" | "READY" | "NEEDS_CHANGES" | "APPROVED";
+  version: number;
+  currentArea: "FLAGRANCIA" | "LITIGACION" | "SUPERVISION";
+  moduleOwner: "FLAGRANCIA" | "MP";
+  payload: unknown;
+  case: {
+    id: string;
+    folio: string;
+    title: string;
+  };
+  evidences: {
+    id: string;
+    originalName: string;
+    contentType: string;
+    sizeBytes: number;
+    createdAt: string;
+  }[];
+  artifacts: {
+    id: string;
+    format: "PPTX" | "PDF";
+    status: "READY" | "FAILED";
+    fileName: string;
+    createdAt: string;
+  }[];
+  statusTransitions: {
+    id: string;
+    fromStatus: string;
+    toStatus: string;
+    comment: string;
+    createdAt: string;
+    changedByUser: {
+      id: string;
+      name: string;
+      role: Role;
+    };
+  }[];
+};
+
+function inferAreaByRole(role: Role): "FLAGRANCIA" | "LITIGACION" | "SUPERVISION" {
+  if (role === "LITIGACION") {
+    return "LITIGACION";
+  }
+
+  if (role === "SUPERVISOR") {
+    return "SUPERVISION";
+  }
+
+  return "FLAGRANCIA";
+}
+
+export function RecordEditor({
+  record,
+  role,
+  litigacionReadyEnabled,
+  litigacionCanDeleteEvidence,
+}: {
+  record: RecordEditorData;
+  role: Role;
+  litigacionReadyEnabled: boolean;
+  litigacionCanDeleteEvidence: boolean;
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState<"" | "pptx" | "pdf">("");
+
+  const parsedPayload = recordFormSchema.safeParse(record.payload);
+  const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
+
+  const form = useForm<RecordFormInput>({
+    resolver: zodResolver(recordFormSchema),
+    defaultValues,
+  });
+
+  const transitions = useMemo(
+    () => allowedTransitions(role, record.status, litigacionReadyEnabled),
+    [role, record.status, litigacionReadyEnabled],
+  );
+
+  const editable = canUpdateRecord(role);
+
+  const submitDraft = form.handleSubmit(async (values) => {
+    if (!editable) {
+      toast.error("Tu rol no puede editar fichas");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...values,
+        observaciones: {
+          ...values.observaciones,
+          relevancia: values.observaciones.relevancia || undefined,
+        },
+      };
+
+      const res = await fetch(`/api/records/${record.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payload,
+          currentArea: inferAreaByRole(role),
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "No se pudo guardar ficha");
+      }
+
+      toast.success("Ficha guardada");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    } finally {
+      setSaving(false);
+    }
+  });
+
+  const requestStatus = async (toStatus: "DRAFT" | "READY" | "APPROVED" | "NEEDS_CHANGES") => {
+    if (toStatus === "DRAFT") {
+      return;
+    }
+    let comment = "";
+    if (toStatus === "NEEDS_CHANGES") {
+      const answer = prompt("Comentario obligatorio para solicitar cambios:");
+      if (!answer || answer.trim().length === 0) {
+        toast.error("Debes capturar un comentario");
+        return;
+      }
+      comment = answer;
+    }
+
+    try {
+      const response = await fetch(`/api/records/${record.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toStatus, comment }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo cambiar estatus");
+      }
+
+      toast.success(`Estatus actualizado a ${toStatus}`);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const uploadEvidence = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const response = await fetch(`/api/records/${record.id}/evidence`, {
+        method: "POST",
+        body: data,
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo subir evidencia");
+      }
+
+      toast.success("Evidencia cargada");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteEvidence = async (evidenceId: string) => {
+    if (!confirm("Deseas borrar esta evidencia?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/evidence/${evidenceId}`, {
+        method: "DELETE",
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo borrar evidencia");
+      }
+      toast.success("Evidencia eliminada");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const generateArtifact = async (format: "pptx" | "pdf") => {
+    setGenerating(format);
+    try {
+      const response = await fetch(`/api/records/${record.id}/generate?format=${format}`, {
+        method: "POST",
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || `No se pudo generar ${format}`);
+      }
+
+      toast.success(`${format.toUpperCase()} generado`);
+      window.open(`/api/artifacts/${json.data.id}/download`, "_blank", "noopener,noreferrer");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    } finally {
+      setGenerating("");
+    }
+  };
+
+  const deleteRecord = async () => {
+    if (!confirm("Se eliminara la ficha. Continuar?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/records/${record.id}`, { method: "DELETE" });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo eliminar la ficha");
+      }
+
+      toast.success("Ficha eliminada");
+      router.replace(`/cases/${record.case.id}`);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const canDeleteEvidence =
+    role === "FLAGRANCIA" || role === "MP" || role === "ADMIN" || (role === "LITIGACION" && litigacionCanDeleteEvidence);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="mr-2">Ficha {record.id.slice(0, 8)}</span>
+            <StatusBadge status={record.status} />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-slate-600">
+          <p>
+            Caso: <Link href={`/cases/${record.case.id}`} className="font-semibold text-slate-900 underline">{record.case.folio}</Link> · {record.case.title}
+          </p>
+          <p>
+            Version: {record.version} · Area actual: {record.currentArea} · Module owner: {record.moduleOwner}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {transitions.map((item) => (
+              <Button key={item.toStatus} size="sm" onClick={() => requestStatus(item.toStatus)}>
+                <Send className="h-4 w-4" /> {item.label}
+              </Button>
+            ))}
+            <Button size="sm" variant="outline" disabled={generating !== ""} onClick={() => generateArtifact("pptx")}>
+              <FileDown className="h-4 w-4" /> {generating === "pptx" ? "Generando..." : "Generar PPTX"}
+            </Button>
+            <Button size="sm" variant="outline" disabled={generating !== ""} onClick={() => generateArtifact("pdf")}>
+              <FileDown className="h-4 w-4" /> {generating === "pdf" ? "Generando..." : "Generar PDF"}
+            </Button>
+            {canDeleteRecord(role) ? (
+              <Button size="sm" variant="destructive" onClick={deleteRecord}>
+                <Trash2 className="h-4 w-4" /> Borrar ficha
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Plantilla unica de ficha (11 secciones)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-6" onSubmit={submitDraft}>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Field label="Agencia">
+                <Input {...form.register("agencyName")} disabled={!editable} />
+              </Field>
+              <Field label="Titulo del reporte">
+                <Input {...form.register("reportTitle")} disabled={!editable} />
+              </Field>
+              <Field label="Version plantilla">
+                <Input {...form.register("templateVersion")} disabled={!editable} />
+              </Field>
+            </div>
+
+            <Section title="1) Expedientes">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="CDI">
+                  <Input {...form.register("expedientes.cdi")} disabled={!editable} />
+                </Field>
+                <Field label="CP">
+                  <Input {...form.register("expedientes.cp")} disabled={!editable} />
+                </Field>
+                <Field label="Carpeta judicial">
+                  <Input {...form.register("expedientes.carpetaJudicial")} disabled={!editable} />
+                </Field>
+                <Field label="Juicio oral">
+                  <Input {...form.register("expedientes.juicioOral")} disabled={!editable} />
+                </Field>
+              </div>
+            </Section>
+
+            <Section title="2) Fecha y hora">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Fecha">
+                  <Input placeholder="13 DE FEBRERO DE 2026" {...form.register("fechaHora.fecha")} disabled={!editable} />
+                </Field>
+                <Field label="Hora programada">
+                  <Input placeholder="HORA PROGRAMADA: 09:00" {...form.register("fechaHora.horaProgramada")} disabled={!editable} />
+                </Field>
+                <Field label="Hora inicio">
+                  <Input placeholder="09:15" {...form.register("fechaHora.horaInicio")} disabled={!editable} />
+                </Field>
+                <Field label="Hora termino">
+                  <Input placeholder="10:40" {...form.register("fechaHora.horaTermino")} disabled={!editable} />
+                </Field>
+              </div>
+            </Section>
+
+            <Section title="3) Delito">
+              <Field label="Nombre del delito">
+                <Input {...form.register("delito.nombre")} disabled={!editable} />
+              </Field>
+            </Section>
+
+            <Section title="4) Imputado">
+              <Field label="Nombre completo">
+                <Input {...form.register("imputado.nombreCompleto")} disabled={!editable} />
+              </Field>
+            </Section>
+
+            <Section title="5) Ofendido">
+              <Field label="Nombre completo">
+                <Input {...form.register("ofendido.nombreCompleto")} disabled={!editable} />
+              </Field>
+            </Section>
+
+            <Section title="6) Hecho">
+              <Field label="Descripcion (min 20 para READY)">
+                <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
+              </Field>
+            </Section>
+
+            <Section title="7) Tipo de audiencia / etapa">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label="Tipo audiencia">
+                  <Input {...form.register("audiencia.tipo")} disabled={!editable} />
+                </Field>
+                <Field label="Etapa">
+                  <Input {...form.register("audiencia.etapa")} disabled={!editable} />
+                </Field>
+                <Field label="Modalidad">
+                  <Input {...form.register("audiencia.modalidad")} disabled={!editable} />
+                </Field>
+              </div>
+            </Section>
+
+            <Section title="8) Autoridades">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Juez">
+                  <Input {...form.register("autoridades.juez")} disabled={!editable} />
+                </Field>
+                <Field label="MP">
+                  <Input {...form.register("autoridades.mp")} disabled={!editable} />
+                </Field>
+                <Field label="Defensa">
+                  <Input {...form.register("autoridades.defensa")} disabled={!editable} />
+                </Field>
+                <Field label="Asesor juridico">
+                  <Input {...form.register("autoridades.asesorJuridico")} disabled={!editable} />
+                </Field>
+              </div>
+              <Field label="Observacion">
+                <Textarea rows={3} {...form.register("autoridades.observacion")} disabled={!editable} />
+              </Field>
+            </Section>
+
+            <Section title="9) Resultado">
+              <Field label="Descripcion">
+                <Textarea rows={3} {...form.register("resultado.descripcion")} disabled={!editable} />
+              </Field>
+            </Section>
+
+            <Section title="10) Medida cautelar">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label="Descripcion">
+                  <Textarea rows={3} {...form.register("medidaCautelar.descripcion")} disabled={!editable} />
+                </Field>
+                <Field label="Tipo">
+                  <Input {...form.register("medidaCautelar.tipo")} disabled={!editable} />
+                </Field>
+                <Field label="Fundamento">
+                  <Input {...form.register("medidaCautelar.fundamento")} disabled={!editable} />
+                </Field>
+              </div>
+            </Section>
+
+            <Section title="11) Observaciones">
+              <Field label="Texto">
+                <Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} />
+              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Relevancia">
+                  <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
+                    <option value="">Sin relevancia</option>
+                    <option value="ALTA">ALTA</option>
+                    <option value="MEDIA">MEDIA</option>
+                    <option value="BAJA">BAJA</option>
+                  </Select>
+                </Field>
+                <Field label="Violencia de genero">
+                  <div className="flex h-10 items-center rounded-md border border-slate-300 px-3">
+                    <input
+                      id="violenciaGenero"
+                      type="checkbox"
+                      className="mr-2"
+                      checked={form.watch("observaciones.violenciaGenero")}
+                      onChange={(event) => form.setValue("observaciones.violenciaGenero", event.target.checked)}
+                      disabled={!editable}
+                    />
+                    <Label htmlFor="violenciaGenero" className="text-sm font-normal">
+                      Marcar si aplica
+                    </Label>
+                  </div>
+                </Field>
+              </div>
+            </Section>
+
+            <Button type="submit" disabled={!editable || saving}>
+              <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar DRAFT"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Evidencias</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              type="file"
+              disabled={uploading}
+              onChange={(event) => uploadEvidence(event.target.files?.[0] ?? null)}
+            />
+            <Button type="button" variant="outline" disabled>
+              <Upload className="h-4 w-4" />
+            </Button>
+          </div>
+          {record.evidences.length === 0 ? <p className="text-sm text-slate-500">No hay evidencias cargadas.</p> : null}
+          {record.evidences.map((evidence) => (
+            <div key={evidence.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 p-3">
+              <div>
+                <p className="text-sm font-medium text-slate-900">{evidence.originalName}</p>
+                <p className="text-xs text-slate-500">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={`/api/evidence/${evidence.id}/download`} target="_blank" rel="noreferrer">
+                  <Button size="sm" variant="outline">
+                    <Download className="h-4 w-4" /> Descargar
+                  </Button>
+                </a>
+                {canDeleteEvidence ? (
+                  <Button size="sm" variant="destructive" onClick={() => deleteEvidence(evidence.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Historial de estado</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {record.statusTransitions.length === 0 ? <p className="text-sm text-slate-500">Sin transiciones.</p> : null}
+          {record.statusTransitions.map((transition) => (
+            <p key={transition.id} className="text-xs text-slate-600">
+              {new Date(transition.createdAt).toLocaleString()} · {transition.changedByUser.name} · {transition.fromStatus} -&gt; {transition.toStatus}
+              {transition.comment ? ` (${transition.comment})` : ""}
+            </p>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Artefactos generados</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {record.artifacts.length === 0 ? <p className="text-sm text-slate-500">Aun no se han generado documentos.</p> : null}
+          {record.artifacts.map((artifact) => (
+            <div key={artifact.id} className="flex items-center justify-between rounded-md border border-slate-200 p-3">
+              <div>
+                <p className="text-sm font-medium text-slate-900">{artifact.format} · {artifact.fileName}</p>
+                <p className="text-xs text-slate-500">{new Date(artifact.createdAt).toLocaleString()}</p>
+              </div>
+              <a href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">
+                <Button size="sm" variant="outline">
+                  <Download className="h-4 w-4" /> Descargar
+                </Button>
+              </a>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3 rounded-lg border border-slate-200 p-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">{title}</h3>
+      {children}
+    </section>
+  );
+}
