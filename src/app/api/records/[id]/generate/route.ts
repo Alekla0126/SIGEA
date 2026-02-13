@@ -41,7 +41,16 @@ export async function POST(
 
   try {
     if (formatQuery === "pptx") {
-      buffer = await generatePptx(parsedPayload.data);
+      const photoEvidence = await prisma.evidence.findFirst({
+        where: {
+          recordId: id,
+          contentType: { in: ["image/png", "image/jpeg", "image/jpg", "image/webp"] },
+        },
+        orderBy: { createdAt: "asc" },
+        select: { storagePath: true },
+      });
+
+      buffer = await generatePptx(parsedPayload.data, { photoPath: photoEvidence?.storagePath ?? null });
       extension = "pptx";
       format = ArtifactFormat.PPTX;
     } else {

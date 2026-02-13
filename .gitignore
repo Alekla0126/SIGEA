@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# local media exports (evitar subir evidencia/plantillas sueltas)
+*.m4a
+*.heic
+/*.pptx
+
 # debug
 npm-debug.log*
 yarn-debug.log*

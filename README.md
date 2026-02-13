@@ -101,12 +101,14 @@ Validacion `READY` (backend + frontend):
 
 ## Documentos (PPTX/PDF)
 
-- Plantilla base: `assets/templates/sigea_template.pptx`
-- Servicio server-side:
-  - `src/server/docgen/service.ts`
-  - `src/server/docgen/template.ts`
-- Mapeo de 11 secciones implementado (`section1..section11`).
-- `fitText()` reduce font-size y trunca con `...` si aun hay overflow.
+- PPTX (mampara):
+  - Assets (sanitizados): `assets/mampara/*`
+  - Generador: `src/server/docgen/mampara.ts`
+  - Entrada: `FichaPayload` + (opcional) primera evidencia imagen (`image/png|jpeg|jpg|webp`) como foto.
+- PDF (MVP):
+  - Generador: `src/server/docgen/pdf.tsx`
+  - Mapeo de 11 secciones (`section1..section11`) via `src/server/docgen/template.ts`
+  - `fitText()` reduce font-size y trunca con `...` si aun hay overflow.
 
 ## API principal
 
