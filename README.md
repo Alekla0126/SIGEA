@@ -106,13 +106,13 @@ Validacion `READY` (backend + frontend):
   - Generador: `src/server/docgen/mampara.ts`
   - Entrada: `FichaPayload` + (opcional) primera evidencia imagen (`image/png|jpeg|jpg|webp`) como foto.
 - PPTX (ficha):
-  - Assets: `assets/ficha/*`
+  - Layout de referencia: `9925 ROBO DE VEHICULO AGRAVADO FEBRERO 2026.pptx`
+  - Assets: `assets/mampara/*` (mismos recursos visuales del ejemplo)
   - Generador: `src/server/docgen/ficha.ts`
-  - Entrada: `FichaPayload` (tabla estilo ficha como `FICHAS.pptx` de referencia).
-- PDF (MVP):
-  - Generador: `src/server/docgen/pdf.tsx`
-  - Mapeo de 11 secciones (`section1..section11`) via `src/server/docgen/template.ts`
-  - Salida simple en A4 (11 secciones).
+  - Entrada: `FichaPayload` + (opcional) primera evidencia imagen (`image/png|jpeg|jpg`) como foto.
+- PDF:
+  - Se genera convirtiendo el PPTX (template `ficha`) con LibreOffice (`soffice`) para que el PDF sea el mismo layout que el PPTX.
+  - Converter: `src/server/docgen/soffice.ts`
 
 ## API principal
 

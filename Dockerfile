@@ -19,6 +19,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+RUN apk add --no-cache \
+    libreoffice \
+    font-montserrat \
+    font-eb-garamond \
+    font-urw-base35
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json

@@ -200,6 +200,7 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
       y: 2.561,
       w: 1.933,
       h: 3.315,
+      sizing: { type: "cover", w: 1.933, h: 3.315 },
     });
   } else {
     slide.addShape(pptx.ShapeType.rect, {
