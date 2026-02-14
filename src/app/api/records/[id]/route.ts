@@ -144,7 +144,7 @@ export async function DELETE(
     entityId: id,
     userId: auth.user.id,
     caseId: current.caseId,
-    recordId: id,
+    // No referenciar recordId como FK porque la ficha ya fue borrada.
     before: current,
   });
 

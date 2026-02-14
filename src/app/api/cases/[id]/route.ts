@@ -146,7 +146,7 @@ export async function DELETE(
     entityType: EntityType.CASE,
     entityId: id,
     userId: auth.user.id,
-    caseId: id,
+    // No referenciar caseId como FK porque el caso ya fue borrado.
     before: current,
   });
 
