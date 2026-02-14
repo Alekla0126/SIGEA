@@ -4,6 +4,12 @@ import { readStoredFile } from "@/server/services/storage";
 
 export const runtime = "nodejs";
 
+function contentDisposition(fileName: string) {
+  const fallback = fileName.replace(/[^a-zA-Z0-9._-]/g, "_") || "evidencia";
+  const encoded = encodeURIComponent(fileName);
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
@@ -25,7 +31,8 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": evidence.contentType,
-        "Content-Disposition": `attachment; filename=\"${encodeURIComponent(evidence.originalName)}\"`,
+        "Content-Disposition": contentDisposition(evidence.originalName),
+        "Content-Length": String(fileBuffer.length),
       },
     });
   } catch {
