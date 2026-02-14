@@ -27,10 +27,14 @@ export async function POST(
   }
 
   const templateQuery = searchParams.get("template")?.toLowerCase();
-  const template = templateQuery || "mampara";
+  const template = templateQuery || (formatQuery === "pdf" ? "ficha" : "mampara");
 
-  if (formatQuery === "pptx" && template !== "mampara" && template !== "ficha") {
+  if (template !== "mampara" && template !== "ficha") {
     return fail("Template invalido. Use mampara o ficha", 400);
+  }
+
+  if (formatQuery === "pdf" && template !== "ficha") {
+    return fail("Template invalido para PDF. Use ficha", 400);
   }
 
   const record = await prisma.record.findUnique({ where: { id } });
@@ -48,19 +52,19 @@ export async function POST(
   let format: ArtifactFormat;
 
   try {
-    if (formatQuery === "pptx") {
-      const photoEvidence =
-        template === "mampara"
-          ? await prisma.evidence.findFirst({
-              where: {
-                recordId: id,
-                contentType: { in: ["image/png", "image/jpeg", "image/jpg", "image/webp"] },
-              },
-              orderBy: { createdAt: "asc" },
-              select: { storagePath: true },
-            })
-          : null;
+    const photoEvidence =
+      template === "mampara" || template === "ficha"
+        ? await prisma.evidence.findFirst({
+            where: {
+              recordId: id,
+              contentType: { in: ["image/png", "image/jpeg", "image/jpg"] },
+            },
+            orderBy: { createdAt: "asc" },
+            select: { storagePath: true },
+          })
+        : null;
 
+    if (formatQuery === "pptx") {
       buffer = await generatePptx(parsedPayload.data, {
         template: template as "mampara" | "ficha",
         photoPath: photoEvidence?.storagePath ?? null,
@@ -68,7 +72,10 @@ export async function POST(
       extension = "pptx";
       format = ArtifactFormat.PPTX;
     } else {
-      buffer = await generatePdf(parsedPayload.data);
+      buffer = await generatePdf(parsedPayload.data, {
+        template: template as "mampara" | "ficha",
+        photoPath: photoEvidence?.storagePath ?? null,
+      });
       extension = "pdf";
       format = ArtifactFormat.PDF;
     }
@@ -91,7 +98,7 @@ export async function POST(
   }
 
   const saved = await saveArtifactBuffer(
-    formatQuery === "pptx" ? `record-${id}-${template}.${extension}` : `record-${id}.${extension}`,
+    `record-${id}-${template}.${extension}`,
     buffer,
   );
 
@@ -118,7 +125,7 @@ export async function POST(
       format: artifact.format,
       sizeBytes: artifact.sizeBytes,
       fileName: artifact.fileName,
-      ...(formatQuery === "pptx" ? { template } : {}),
+      template,
     },
   });
 
