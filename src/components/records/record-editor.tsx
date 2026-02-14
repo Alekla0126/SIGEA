@@ -228,6 +228,9 @@ export function RecordEditor({
   const generateArtifact = async (format: "pptx" | "pdf", template?: "mampara" | "ficha") => {
     const key = format === "pptx" ? (`pptx-${template || "mampara"}` as const) : "pdf";
     setGenerating(key);
+    // iOS Safari puede bloquear `window.open()` si ocurre despues de await.
+    // Abrimos una pestaña en blanco dentro del gesto del click y luego seteamos la URL al terminar.
+    const popup = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
     try {
       const query = new URLSearchParams({ format });
       if (format === "pptx" && template) {
@@ -243,9 +246,27 @@ export function RecordEditor({
       }
 
       toast.success(`${format.toUpperCase()} generado`);
-      window.open(`/api/artifacts/${json.data.id}/download`, "_blank", "noopener,noreferrer");
+      const downloadUrl = `/api/artifacts/${json.data.id}/download`;
+      const isIOS =
+        typeof navigator !== "undefined" &&
+        (/iP(ad|hone|od)/.test(navigator.userAgent) ||
+          // iPadOS 13+ a veces reporta "Macintosh"; esto lo detecta como iOS con touch.
+          (navigator.userAgent.includes("Mac") && typeof document !== "undefined" && "ontouchend" in document));
+
+      // En iPhone/iPad a menudo la descarga no arranca si se navega una pestaña en background.
+      // Forzamos descarga en la misma pestaña para que Safari dispare el flujo de descargas.
+      if (isIOS) {
+        popup?.close();
+        window.location.href = downloadUrl;
+      } else if (popup) {
+        popup.location.href = downloadUrl;
+        popup.focus();
+      } else {
+        window.location.href = downloadUrl;
+      }
       router.refresh();
     } catch (error) {
+      popup?.close();
       toast.error(error instanceof Error ? error.message : "Error");
     } finally {
       setGenerating("");
@@ -291,15 +312,16 @@ export function RecordEditor({
           <p>
             Version: {record.version} · Area actual: {record.currentArea} · Module owner: {record.moduleOwner}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:overflow-visible">
             {transitions.map((item) => (
-              <Button key={item.toStatus} size="sm" onClick={() => requestStatus(item.toStatus)}>
+              <Button key={item.toStatus} size="sm" className="shrink-0" onClick={() => requestStatus(item.toStatus)}>
                 <Send className="h-4 w-4" /> {item.label}
               </Button>
             ))}
             <Button
               size="sm"
               variant="outline"
+              className="shrink-0"
               disabled={generating !== ""}
               onClick={() => generateArtifact("pptx", "mampara")}
             >
@@ -309,6 +331,7 @@ export function RecordEditor({
             <Button
               size="sm"
               variant="outline"
+              className="shrink-0"
               disabled={generating !== ""}
               onClick={() => generateArtifact("pptx", "ficha")}
             >
@@ -318,13 +341,14 @@ export function RecordEditor({
             <Button
               size="sm"
               variant="outline"
+              className="shrink-0"
               disabled={generating !== ""}
               onClick={() => generateArtifact("pdf")}
             >
               <FileDown className="h-4 w-4" /> {generating === "pdf" ? "Generando..." : "Generar PDF (Ficha)"}
             </Button>
             {canDeleteRecord(role) ? (
-              <Button size="sm" variant="destructive" onClick={deleteRecord}>
+              <Button size="sm" variant="destructive" className="shrink-0" onClick={deleteRecord}>
                 <Trash2 className="h-4 w-4" /> Borrar ficha
               </Button>
             ) : null}
@@ -527,7 +551,7 @@ export function RecordEditor({
                 <p className="text-xs text-muted-foreground">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
               </div>
               <div className="flex items-center gap-2">
-                <a href={`/api/evidence/${evidence.id}/download`} target="_blank" rel="noreferrer">
+                <a href={`/api/evidence/${evidence.id}/download`} download>
                   <Button size="sm" variant="outline">
                     <Download className="h-4 w-4" /> Descargar
                   </Button>
@@ -575,7 +599,7 @@ export function RecordEditor({
                 <p className="text-sm font-medium text-card-foreground">{artifact.format} · {artifact.fileName}</p>
                 <p className="text-xs text-muted-foreground">{new Date(artifact.createdAt).toLocaleString()}</p>
               </div>
-              <a href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">
+              <a href={`/api/artifacts/${artifact.id}/download`} download>
                 <Button size="sm" variant="outline">
                   <Download className="h-4 w-4" /> Descargar
                 </Button>
