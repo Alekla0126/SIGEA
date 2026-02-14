@@ -141,14 +141,23 @@ export async function DELETE(
 
   await prisma.case.delete({ where: { id } });
 
-  await writeAudit({
-    action: AuditAction.DELETE,
-    entityType: EntityType.CASE,
-    entityId: id,
-    userId: auth.user.id,
-    // No referenciar caseId como FK porque el caso ya fue borrado.
-    before: current,
-  });
+  try {
+    await writeAudit({
+      action: AuditAction.DELETE,
+      entityType: EntityType.CASE,
+      entityId: id,
+      userId: auth.user.id,
+      // No referenciar caseId como FK porque el caso ya fue borrado.
+      before: {
+        id: current.id,
+        folio: current.folio,
+        title: current.title,
+        createdAt: current.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("writeAudit(case.delete) failed", error);
+  }
 
   return ok({ deleted: true });
 }

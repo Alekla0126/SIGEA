@@ -138,15 +138,26 @@ export async function DELETE(
 
   await prisma.record.delete({ where: { id } });
 
-  await writeAudit({
-    action: AuditAction.DELETE,
-    entityType: EntityType.RECORD,
-    entityId: id,
-    userId: auth.user.id,
-    caseId: current.caseId,
-    // No referenciar recordId como FK porque la ficha ya fue borrada.
-    before: current,
-  });
+  try {
+    await writeAudit({
+      action: AuditAction.DELETE,
+      entityType: EntityType.RECORD,
+      entityId: id,
+      userId: auth.user.id,
+      caseId: current.caseId,
+      // No referenciar recordId como FK porque la ficha ya fue borrada.
+      // Guardar solo un resumen minimiza riesgo de errores/limites en diffJson.
+      before: {
+        id: current.id,
+        caseId: current.caseId,
+        status: current.status,
+        version: current.version,
+        createdAt: current.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("writeAudit(record.delete) failed", error);
+  }
 
   return ok({ deleted: true });
 }

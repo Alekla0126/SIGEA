@@ -29,8 +29,8 @@ export async function POST(
   const templateQuery = searchParams.get("template")?.toLowerCase();
   const template = templateQuery || (formatQuery === "pdf" ? "ficha" : "mampara");
 
-  if (template !== "mampara" && template !== "ficha") {
-    return fail("Template invalido. Use mampara o ficha", 400);
+  if (template !== "mampara" && template !== "tarjeta" && template !== "ficha") {
+    return fail("Template invalido. Use mampara, tarjeta o ficha", 400);
   }
 
   if (formatQuery === "pdf" && template !== "ficha") {
@@ -53,7 +53,7 @@ export async function POST(
 
   try {
     const photoEvidence =
-      template === "mampara" || template === "ficha"
+      template === "mampara" || template === "tarjeta"
         ? await prisma.evidence.findFirst({
             where: {
               recordId: id,
@@ -66,14 +66,14 @@ export async function POST(
 
     if (formatQuery === "pptx") {
       buffer = await generatePptx(parsedPayload.data, {
-        template: template as "mampara" | "ficha",
+        template: template as "mampara" | "tarjeta" | "ficha",
         photoPath: photoEvidence?.storagePath ?? null,
       });
       extension = "pptx";
       format = ArtifactFormat.PPTX;
     } else {
       buffer = await generatePdf(parsedPayload.data, {
-        template: template as "mampara" | "ficha",
+        template: template as "mampara" | "tarjeta" | "ficha",
         photoPath: photoEvidence?.storagePath ?? null,
       });
       extension = "pdf";

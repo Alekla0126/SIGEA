@@ -90,7 +90,7 @@ export function RecordEditor({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-ficha" | "pdf">("");
+  const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-tarjeta" | "pptx-ficha" | "pdf">("");
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
@@ -225,7 +225,7 @@ export function RecordEditor({
     }
   };
 
-  const generateArtifact = async (format: "pptx" | "pdf", template?: "mampara" | "ficha") => {
+  const generateArtifact = async (format: "pptx" | "pdf", template?: "mampara" | "tarjeta" | "ficha") => {
     const key = format === "pptx" ? (`pptx-${template || "mampara"}` as const) : "pdf";
     setGenerating(key);
     try {
@@ -305,6 +305,15 @@ export function RecordEditor({
             >
               <FileDown className="h-4 w-4" />{" "}
               {generating === "pptx-mampara" ? "Generando..." : "Generar PPTX (Mampara)"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={generating !== ""}
+              onClick={() => generateArtifact("pptx", "tarjeta")}
+            >
+              <FileDown className="h-4 w-4" />{" "}
+              {generating === "pptx-tarjeta" ? "Generando..." : "Generar PPTX (Tarjeta informativa)"}
             </Button>
             <Button
               size="sm"

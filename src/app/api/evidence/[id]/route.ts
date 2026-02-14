@@ -34,18 +34,22 @@ export async function DELETE(
 
   await fs.unlink(evidence.storagePath).catch(() => null);
 
-  await writeAudit({
-    action: AuditAction.EVIDENCE,
-    entityType: EntityType.EVIDENCE,
-    entityId: id,
-    userId: auth.user.id,
-    caseId: evidence.record.caseId,
-    recordId: evidence.recordId,
-    before: {
-      originalName: evidence.originalName,
-      sizeBytes: evidence.sizeBytes,
-    },
-  });
+  try {
+    await writeAudit({
+      action: AuditAction.EVIDENCE,
+      entityType: EntityType.EVIDENCE,
+      entityId: id,
+      userId: auth.user.id,
+      caseId: evidence.record.caseId,
+      recordId: evidence.recordId,
+      before: {
+        originalName: evidence.originalName,
+        sizeBytes: evidence.sizeBytes,
+      },
+    });
+  } catch (error) {
+    console.error("writeAudit(evidence.delete) failed", error);
+  }
 
   return ok({ deleted: true });
 }
