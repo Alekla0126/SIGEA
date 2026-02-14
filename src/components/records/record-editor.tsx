@@ -495,7 +495,6 @@ export function RecordEditor({
                   <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
                     <option value="">Sin relevancia</option>
                     <option value="ALTA">ALTA</option>
-                    <option value="MEDIA">MEDIA</option>
                     <option value="BAJA">BAJA</option>
                   </Select>
                 </Field>

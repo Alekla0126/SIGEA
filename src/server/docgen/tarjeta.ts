@@ -115,8 +115,6 @@ function relevanciaToColor(relevancia?: string | null) {
   switch ((relevancia || "").toUpperCase()) {
     case "ALTA":
       return COLORS.red;
-    case "MEDIA":
-      return "FFC000";
     case "BAJA":
     default:
       return COLORS.yellow;

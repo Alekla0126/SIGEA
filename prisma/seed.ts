@@ -66,7 +66,7 @@ const samplePayload = {
   },
   observaciones: {
     texto: "Caso de seguimiento prioritario.",
-    relevancia: "MEDIA",
+    relevancia: "BAJA",
     violenciaGenero: false,
   },
 };

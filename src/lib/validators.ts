@@ -4,7 +4,10 @@ import { z } from "zod";
 const text = (max: number) => z.string().max(max);
 const optionalText = (max: number) => z.string().max(max).default("");
 
-const relevanciaSchema = z.enum(["ALTA", "MEDIA", "BAJA"]);
+// Solo existen ALTA/BAJA. "MEDIA" se acepta solo por compatibilidad y se normaliza a BAJA.
+const relevanciaSchema = z
+  .enum(["ALTA", "BAJA", "MEDIA"])
+  .transform((value): "ALTA" | "BAJA" => (value === "MEDIA" ? "BAJA" : value));
 
 export const fichaPayloadSchema = z
   .object({

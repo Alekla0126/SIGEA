@@ -58,12 +58,16 @@ export const recordFormSchema = z.object({
   }),
   observaciones: z.object({
     texto: optionalText(3000),
-    relevancia: z.enum(["ALTA", "MEDIA", "BAJA", ""]),
+    // Solo existen ALTA/BAJA. "MEDIA" se acepta solo por compatibilidad y se normaliza a BAJA.
+    relevancia: z
+      .enum(["ALTA", "BAJA", "", "MEDIA"])
+      .transform((value): "ALTA" | "BAJA" | "" => (value === "MEDIA" ? "BAJA" : value)),
     violenciaGenero: z.boolean(),
   }),
 });
 
-export type RecordFormInput = z.infer<typeof recordFormSchema>;
+// `react-hook-form` trabaja con el "input" del schema (pre-transform). El resolver aplica transforms.
+export type RecordFormInput = z.input<typeof recordFormSchema>;
 
 export const emptyRecordForm: RecordFormInput = {
   agencyName: "FISCALIA DE INVESTIGACION METROPOLITANA",
