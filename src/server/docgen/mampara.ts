@@ -71,6 +71,16 @@ function relevanciaToColor(relevancia?: string | null) {
   }
 }
 
+function indicadorToColor(payload: FichaPayload) {
+  // En el formato de mampara, el color del indicador depende SOLO de:
+  // - Violencia de genero (morado) o
+  // - Relevancia (alta=rojo, baja=amarillo)
+  if (payload.observaciones.violenciaGenero) {
+    return COLORS.purple;
+  }
+  return relevanciaToColor(payload.observaciones.relevancia);
+}
+
 function buildAvances(payload: FichaPayload) {
   const lines = [
     payload.resultado.descripcion?.trim(),
@@ -105,7 +115,7 @@ export async function generateMamparaPptx(payload: FichaPayload, options: Mampar
     y: 0.245,
     w: 0.974,
     h: 1.071,
-    fill: { color: relevanciaToColor(payload.observaciones.relevancia) },
+    fill: { color: indicadorToColor(payload) },
     line: { color: COLORS.black, pt: 1.25 },
   });
 

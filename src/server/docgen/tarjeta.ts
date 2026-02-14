@@ -40,6 +40,7 @@ const COLORS = {
   red: "FF0000",
   redDark: "C00000",
   yellow: "FFFF00",
+  purple: "CC99FF",
 } as const;
 
 function assetsPath(fileName: string) {
@@ -121,6 +122,13 @@ function relevanciaToColor(relevancia?: string | null) {
   }
 }
 
+function indicadorToColor(payload: FichaPayload) {
+  if (payload.observaciones.violenciaGenero) {
+    return COLORS.purple;
+  }
+  return relevanciaToColor(payload.observaciones.relevancia);
+}
+
 export async function generateTarjetaPptx(payload: FichaPayload, options: TarjetaPptxOptions = {}) {
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
@@ -132,10 +140,11 @@ export async function generateTarjetaPptx(payload: FichaPayload, options: Tarjet
 
   slide.addImage({ path: assetsPath("header-bar.png"), ...POS.headerBar });
 
+  const indicadorColor = indicadorToColor(payload);
   slide.addShape(pptx.ShapeType.rect, {
     ...POS.relevancia,
-    fill: { color: relevanciaToColor(payload.observaciones.relevancia) },
-    line: { color: relevanciaToColor(payload.observaciones.relevancia), pt: 0 },
+    fill: { color: indicadorColor },
+    line: { color: indicadorColor, pt: 0 },
   });
 
   const delitoText = `Delito: ${safe(payload.delito.nombre) || "SIN DATO"}`;

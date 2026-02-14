@@ -15,6 +15,7 @@ const COLORS = {
   redDark: "#C00000",
   yellow: "#FFFF00",
   red: "#FF0000",
+  purple: "#CC99FF",
 } as const;
 
 const POS = {
@@ -135,6 +136,13 @@ function relevanciaToHex(relevancia?: string | null) {
   }
 }
 
+function indicadorToHex(payload: FichaPayload) {
+  if (payload.observaciones.violenciaGenero) {
+    return COLORS.purple;
+  }
+  return relevanciaToHex(payload.observaciones.relevancia);
+}
+
 export function SigeaFichaPdf({ payload, assets }: SigeaFichaPdfProps) {
   const delitoText = `Delito: ${safe(payload.delito.nombre) || "SIN DATO"}`;
   const delitoFitted = fitTextToBox({
@@ -252,7 +260,7 @@ export function SigeaFichaPdf({ payload, assets }: SigeaFichaPdfProps) {
             top: pt(POS.relevancia.y),
             width: pt(POS.relevancia.w),
             height: pt(POS.relevancia.h),
-            backgroundColor: relevanciaToHex(payload.observaciones.relevancia),
+            backgroundColor: indicadorToHex(payload),
           }}
         />
 
