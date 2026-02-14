@@ -34,11 +34,26 @@ fi
 
 compose build app
 
-# up puede fallar por contenedores huérfanos o conflictos de nombre. Intento suave primero; si falla, reinicio limpio.
-if ! compose up -d --remove-orphans; then
-  echo "docker compose up fallo; intentando reinicio limpio (down + up)..." >&2
-  compose down --remove-orphans
-  compose up -d --remove-orphans
+# Mantener DB estable y recrear solo el servicio app para no afectar otras instancias.
+compose up -d --remove-orphans db
+
+# up puede fallar si Docker aun esta removiendo el contenedor anterior. Reintenta unas veces.
+set +e
+status=1
+for attempt in $(seq 1 6); do
+  compose up -d --remove-orphans --no-deps --force-recreate app
+  status=$?
+  if [[ "$status" -eq 0 ]]; then
+    break
+  fi
+  echo "docker compose up(app) fallo (intento $attempt/6). Reintentando..." >&2
+  sleep 2
+done
+set -e
+
+if [[ "$status" -ne 0 ]]; then
+  echo "docker compose up(app) fallo despues de varios intentos." >&2
+  exit "$status"
 fi
 
 echo "Esperando Postgres..."
