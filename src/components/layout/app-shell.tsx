@@ -45,7 +45,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
             <FileText className="h-4 w-4" /> Fichas
           </Link>
           <Link href="/reports" className="inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted">
-            <Scale className="h-4 w-4" /> KPIs
+            <Scale className="h-4 w-4" /> Dashboard
           </Link>
           {user.role === "ADMIN" ? (
             <Link href="/admin" className="inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted">

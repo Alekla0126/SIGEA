@@ -7,6 +7,8 @@ export type Action =
   | "case:create"
   | "case:update"
   | "case:delete"
+  | "case:restore"
+  | "case:purge"
   | "record:read"
   | "record:create"
   | "record:update"
@@ -24,11 +26,14 @@ const staticRules: Record<Action, Role[]> = {
   "case:read": ["FLAGRANCIA", "MP", "LITIGACION", "SUPERVISOR", "ADMIN"],
   "case:create": ["FLAGRANCIA", "MP", "ADMIN"],
   "case:update": ["FLAGRANCIA", "MP", "ADMIN"],
-  "case:delete": ["FLAGRANCIA", "MP", "ADMIN"],
+  // Borrado en dos pasos (Papelera -> Purga definitiva)
+  "case:delete": ["FLAGRANCIA", "MP", "SUPERVISOR"],
+  "case:restore": ["FLAGRANCIA", "MP", "SUPERVISOR"],
+  "case:purge": ["FLAGRANCIA", "MP", "SUPERVISOR"],
   "record:read": ["FLAGRANCIA", "MP", "LITIGACION", "SUPERVISOR", "ADMIN"],
   "record:create": ["FLAGRANCIA", "MP", "ADMIN"],
   "record:update": ["FLAGRANCIA", "MP", "LITIGACION", "ADMIN"],
-  "record:delete": ["FLAGRANCIA", "MP", "ADMIN"],
+  "record:delete": ["FLAGRANCIA", "MP", "SUPERVISOR"],
   "record:status:ready": ["FLAGRANCIA", "MP", "ADMIN"],
   "record:status:supervise": ["SUPERVISOR", "ADMIN"],
   "evidence:add": ["FLAGRANCIA", "MP", "ADMIN"],

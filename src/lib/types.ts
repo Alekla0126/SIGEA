@@ -7,6 +7,7 @@ export type CaseItem = {
   folio: string;
   title: string;
   description: string;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   createdBy: {

@@ -25,6 +25,9 @@ export async function GET(
           role: true,
         },
       },
+      deletedBy: {
+        select: { id: true, name: true, role: true },
+      },
       records: {
         orderBy: { createdAt: "asc" },
         include: {
@@ -99,6 +102,10 @@ export async function PATCH(
     return fail("Caso no encontrado", 404);
   }
 
+  if (current.deletedAt) {
+    return fail("El caso esta en papelera. Restaura el caso para editarlo.", 409);
+  }
+
   if (parsed.data.folio && parsed.data.folio !== current.folio) {
     const duplicate = await prisma.case.findUnique({ where: { folio: parsed.data.folio } });
     if (duplicate) {
@@ -139,25 +146,27 @@ export async function DELETE(
     return fail("Caso no encontrado", 404);
   }
 
-  await prisma.case.delete({ where: { id } });
-
-  try {
-    await writeAudit({
-      action: AuditAction.DELETE,
-      entityType: EntityType.CASE,
-      entityId: id,
-      userId: auth.user.id,
-      // No referenciar caseId como FK porque el caso ya fue borrado.
-      before: {
-        id: current.id,
-        folio: current.folio,
-        title: current.title,
-        createdAt: current.createdAt,
-      },
-    });
-  } catch (error) {
-    console.error("writeAudit(case.delete) failed", error);
+  if (current.deletedAt) {
+    return fail("El caso ya esta en papelera.", 409);
   }
 
-  return ok({ deleted: true });
+  const trashed = await prisma.case.update({
+    where: { id },
+    data: {
+      deletedAt: new Date(),
+      deletedById: auth.user.id,
+    },
+  });
+
+  await writeAudit({
+    action: AuditAction.DELETE,
+    entityType: EntityType.CASE,
+    entityId: id,
+    userId: auth.user.id,
+    caseId: id,
+    before: current,
+    after: trashed,
+  });
+
+  return ok({ trashed: true });
 }

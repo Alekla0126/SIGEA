@@ -5,16 +5,23 @@ import { fail, ok, parseBody, requireApiUser } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/server/services/audit";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireApiUser("case:read");
   if (auth.error) {
     return auth.error;
   }
 
+  const searchParams = new URL(request.url).searchParams;
+  const trashOnly = searchParams.get("trash") === "1";
+
   const cases = await prisma.case.findMany({
+    where: trashOnly ? { deletedAt: { not: null } } : { deletedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: {
+        select: { id: true, name: true, role: true },
+      },
+      deletedBy: {
         select: { id: true, name: true, role: true },
       },
       records: {

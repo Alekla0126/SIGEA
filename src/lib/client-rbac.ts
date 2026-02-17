@@ -10,7 +10,7 @@ export function canEditCase(role: Role) {
 }
 
 export function canDeleteCase(role: Role) {
-  return role === "FLAGRANCIA" || role === "MP" || role === "ADMIN";
+  return role === "FLAGRANCIA" || role === "MP" || role === "SUPERVISOR";
 }
 
 export function canCreateRecord(role: Role) {
@@ -22,7 +22,7 @@ export function canUpdateRecord(role: Role) {
 }
 
 export function canDeleteRecord(role: Role) {
-  return role === "FLAGRANCIA" || role === "MP" || role === "ADMIN";
+  return role === "FLAGRANCIA" || role === "MP" || role === "SUPERVISOR";
 }
 
 export function canSupervise(role: Role) {

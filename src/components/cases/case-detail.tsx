@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Copy, Plus, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -45,6 +45,7 @@ type CaseDetail = {
   folio: string;
   title: string;
   description: string;
+  deletedAt?: string | null;
   records: CaseRecord[];
   audits: {
     id: string;
@@ -69,9 +70,14 @@ export function CaseDetailView({
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [cloningId, setCloningId] = useState<string>("");
+  const inTrash = Boolean(data.deletedAt);
 
-  const deleteCase = async () => {
-    if (!confirm("Esta accion eliminara el caso y sus fichas. Desea continuar?")) {
+  const trashCase = async () => {
+    if (
+      !confirm(
+        "Enviar el caso a la papelera? Podras restaurarlo o borrarlo definitivamente desde la papelera.",
+      )
+    ) {
       return;
     }
 
@@ -81,7 +87,40 @@ export function CaseDetailView({
       if (!res.ok) {
         throw new Error(json.error || "No se pudo borrar caso");
       }
-      toast.success("Caso eliminado");
+      toast.success("Caso enviado a papelera");
+      router.replace("/cases");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const restoreCase = async () => {
+    try {
+      const res = await fetch(`/api/cases/${data.id}/restore`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "No se pudo restaurar caso");
+      }
+      toast.success("Caso restaurado");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const purgeCase = async () => {
+    if (!confirm("Borrar definitivamente? Esta accion no se puede deshacer.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/cases/${data.id}/purge`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "No se pudo borrar definitivamente");
+      }
+      toast.success("Caso borrado definitivamente");
       router.replace("/cases");
       router.refresh();
     } catch (error) {
@@ -90,6 +129,11 @@ export function CaseDetailView({
   };
 
   const createRecord = async () => {
+    if (inTrash) {
+      toast.error("No se puede crear fichas en un caso en papelera. Restaura el caso primero.");
+      return;
+    }
+
     setCreating(true);
     try {
       const moduleOwner = role === "MP" ? "MP" : "FLAGRANCIA";
@@ -126,6 +170,11 @@ export function CaseDetailView({
   };
 
   const cloneRecord = async (recordId: string) => {
+    if (inTrash) {
+      toast.error("No se puede clonar fichas en un caso en papelera. Restaura el caso primero.");
+      return;
+    }
+
     setCloningId(recordId);
     try {
       const response = await fetch(`/api/records/${recordId}/clone`, {
@@ -157,18 +206,38 @@ export function CaseDetailView({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">{data.description || "Sin descripcion"}</p>
+          {inTrash ? (
+            <div className="rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+              Este caso esta en papelera{data.deletedAt ? ` desde ${new Date(data.deletedAt).toLocaleString()}` : ""}. Puedes restaurarlo o borrarlo definitivamente.
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
-            {canCreateRecord(role) ? (
+            {canCreateRecord(role) && !inTrash ? (
               <Button onClick={createRecord} disabled={creating}>
                 <Plus className="h-4 w-4" /> {creating ? "Creando ficha..." : "Crear ficha"}
               </Button>
             ) : (
-              <p className="text-sm text-muted-foreground">Tu rol no puede crear fichas. Solo puedes revisar/editar existentes.</p>
+              <p className="text-sm text-muted-foreground">
+                {inTrash
+                  ? "No se pueden crear fichas mientras el caso este en papelera."
+                  : "Tu rol no puede crear fichas. Solo puedes revisar/editar existentes."}
+              </p>
             )}
             {canDeleteCase(role) ? (
-              <Button variant="destructive" onClick={deleteCase} title="Eliminar caso y todas sus fichas">
-                <Trash2 className="h-4 w-4" /> Borrar caso
-              </Button>
+              inTrash ? (
+                <>
+                  <Button variant="outline" onClick={restoreCase} title="Restaurar caso">
+                    <RotateCcw className="h-4 w-4" /> Restaurar
+                  </Button>
+                  <Button variant="destructive" onClick={purgeCase} title="Borrar definitivamente">
+                    <Trash2 className="h-4 w-4" /> Borrar definitivo
+                  </Button>
+                </>
+              ) : (
+                <Button variant="destructive" onClick={trashCase} title="Enviar caso a papelera">
+                  <Trash2 className="h-4 w-4" /> Enviar a papelera
+                </Button>
+              )
             ) : null}
           </div>
         </CardContent>
@@ -195,7 +264,7 @@ export function CaseDetailView({
                 <Link href={`/records/${record.id}`}>
                   <Button size="sm">Abrir ficha</Button>
                 </Link>
-                {canCreateRecord(role) ? (
+                {canCreateRecord(role) && !inTrash ? (
                   <Button
                     size="sm"
                     variant="outline"

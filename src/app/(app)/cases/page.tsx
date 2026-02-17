@@ -8,6 +8,7 @@ export default async function CasesPage() {
   const session = await requireSessionPage("case:read");
 
   const cases = await prisma.case.findMany({
+    where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
       createdBy: {

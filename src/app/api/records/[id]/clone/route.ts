@@ -26,6 +26,10 @@ export async function POST(
     return fail("Caso no encontrado", 404);
   }
 
+  if (owningCase.deletedAt) {
+    return fail("El caso esta en papelera. Restaura el caso para clonar fichas.", 409);
+  }
+
   // Prisma JsonValue includes null in its type; normalize to InputJsonValue for inserts.
   const clonedPayload = JSON.parse(JSON.stringify(source.payload)) as Prisma.InputJsonValue;
 

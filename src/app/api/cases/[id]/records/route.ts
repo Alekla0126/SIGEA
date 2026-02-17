@@ -70,6 +70,10 @@ export async function POST(
     return fail("Caso no encontrado", 404);
   }
 
+  if (owningCase.deletedAt) {
+    return fail("El caso esta en papelera. Restaura el caso para crear fichas.", 409);
+  }
+
   const parsed = await parseBody(request, recordCreateSchema);
   if (parsed.error) {
     return parsed.error;
