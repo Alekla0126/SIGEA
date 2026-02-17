@@ -1,10 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -91,6 +91,8 @@ export function RecordEditor({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-tarjeta" | "pptx-ficha" | "pdf">("");
+  const [stepIndex, setStepIndex] = useState(0);
+  const stepsTopRef = useRef<HTMLDivElement | null>(null);
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
@@ -106,6 +108,219 @@ export function RecordEditor({
   );
 
   const editable = canUpdateRecord(role);
+
+  const stepItems = [
+    {
+      title: "Encabezado",
+      content: (
+        <Section title="Encabezado">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label="Agencia">
+              <Input {...form.register("agencyName")} disabled={!editable} />
+            </Field>
+            <Field label="Titulo del reporte">
+              <Input {...form.register("reportTitle")} disabled={!editable} />
+            </Field>
+            <Field label="Version plantilla">
+              <Input {...form.register("templateVersion")} disabled={!editable} />
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+    {
+      title: "1) Expedientes",
+      content: (
+        <Section title="1) Expedientes">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="CDI">
+              <Input {...form.register("expedientes.cdi")} disabled={!editable} />
+            </Field>
+            <Field label="CP">
+              <Input {...form.register("expedientes.cp")} disabled={!editable} />
+            </Field>
+            <Field label="Carpeta judicial">
+              <Input {...form.register("expedientes.carpetaJudicial")} disabled={!editable} />
+            </Field>
+            <Field label="Juicio oral">
+              <Input {...form.register("expedientes.juicioOral")} disabled={!editable} />
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+    {
+      title: "2) Fecha y hora",
+      content: (
+        <Section title="2) Fecha y hora">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Fecha">
+              <Input placeholder="13 DE FEBRERO DE 2026" {...form.register("fechaHora.fecha")} disabled={!editable} />
+            </Field>
+            <Field label="Hora programada">
+              <Input placeholder="HORA PROGRAMADA: 09:00" {...form.register("fechaHora.horaProgramada")} disabled={!editable} />
+            </Field>
+            <Field label="Hora inicio">
+              <Input placeholder="09:15" {...form.register("fechaHora.horaInicio")} disabled={!editable} />
+            </Field>
+            <Field label="Hora termino">
+              <Input placeholder="10:40" {...form.register("fechaHora.horaTermino")} disabled={!editable} />
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+    {
+      title: "3) Delito",
+      content: (
+        <Section title="3) Delito">
+          <Field label="Nombre del delito">
+            <Input {...form.register("delito.nombre")} disabled={!editable} />
+          </Field>
+        </Section>
+      ),
+    },
+    {
+      title: "4) Imputado",
+      content: (
+        <Section title="4) Imputado">
+          <Field label="Nombre completo">
+            <Input {...form.register("imputado.nombreCompleto")} disabled={!editable} />
+          </Field>
+        </Section>
+      ),
+    },
+    {
+      title: "5) Ofendido",
+      content: (
+        <Section title="5) Ofendido">
+          <Field label="Nombre completo">
+            <Input {...form.register("ofendido.nombreCompleto")} disabled={!editable} />
+          </Field>
+        </Section>
+      ),
+    },
+    {
+      title: "6) Hecho",
+      content: (
+        <Section title="6) Hecho">
+          <Field label={`Descripcion (min 20 para ${recordStatusLabel("READY")})`}>
+            <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
+          </Field>
+        </Section>
+      ),
+    },
+    {
+      title: "7) Tipo de audiencia / etapa",
+      content: (
+        <Section title="7) Tipo de audiencia / etapa">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label="Tipo audiencia">
+              <Input {...form.register("audiencia.tipo")} disabled={!editable} />
+            </Field>
+            <Field label="Etapa">
+              <Input {...form.register("audiencia.etapa")} disabled={!editable} />
+            </Field>
+            <Field label="Modalidad">
+              <Input {...form.register("audiencia.modalidad")} disabled={!editable} />
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+    {
+      title: "8) Autoridades",
+      content: (
+        <Section title="8) Autoridades">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Juez">
+              <Input {...form.register("autoridades.juez")} disabled={!editable} />
+            </Field>
+            <Field label="MP">
+              <Input {...form.register("autoridades.mp")} disabled={!editable} />
+            </Field>
+            <Field label="Defensa">
+              <Input {...form.register("autoridades.defensa")} disabled={!editable} />
+            </Field>
+            <Field label="Asesor juridico">
+              <Input {...form.register("autoridades.asesorJuridico")} disabled={!editable} />
+            </Field>
+          </div>
+          <Field label="Observacion">
+            <Textarea rows={3} {...form.register("autoridades.observacion")} disabled={!editable} />
+          </Field>
+        </Section>
+      ),
+    },
+    {
+      title: "9) Resultado",
+      content: (
+        <Section title="9) Resultado">
+          <Field label="Descripcion">
+            <Textarea rows={3} {...form.register("resultado.descripcion")} disabled={!editable} />
+          </Field>
+        </Section>
+      ),
+    },
+    {
+      title: "10) Medida cautelar",
+      content: (
+        <Section title="10) Medida cautelar">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label="Descripcion">
+              <Textarea rows={3} {...form.register("medidaCautelar.descripcion")} disabled={!editable} />
+            </Field>
+            <Field label="Tipo">
+              <Input {...form.register("medidaCautelar.tipo")} disabled={!editable} />
+            </Field>
+            <Field label="Fundamento">
+              <Input {...form.register("medidaCautelar.fundamento")} disabled={!editable} />
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+    {
+      title: "11) Observaciones",
+      content: (
+        <Section title="11) Observaciones">
+          <Field label="Texto">
+            <Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} />
+          </Field>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Relevancia">
+              <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
+                <option value="">Sin relevancia</option>
+                <option value="ALTA">ALTA</option>
+                <option value="BAJA">BAJA</option>
+              </Select>
+            </Field>
+            <Field label="Violencia de genero">
+              <div className="flex h-10 items-center rounded-md border border-input px-3">
+                <input
+                  id="violenciaGenero"
+                  type="checkbox"
+                  className="mr-2"
+                  checked={form.watch("observaciones.violenciaGenero")}
+                  onChange={(event) => form.setValue("observaciones.violenciaGenero", event.target.checked)}
+                  disabled={!editable}
+                />
+                <Label htmlFor="violenciaGenero" className="text-sm font-normal">
+                  Marcar si aplica
+                </Label>
+              </div>
+            </Field>
+          </div>
+        </Section>
+      ),
+    },
+  ] as const;
+
+  const goToStep = (nextIndex: number) => {
+    const clamped = Math.min(Math.max(nextIndex, 0), stepItems.length - 1);
+    setStepIndex(clamped);
+    stepsTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const submitDraft = form.handleSubmit(async (values) => {
     if (!editable) {
@@ -362,163 +577,87 @@ export function RecordEditor({
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={submitDraft}>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Agencia">
-                <Input {...form.register("agencyName")} disabled={!editable} />
-              </Field>
-              <Field label="Titulo del reporte">
-                <Input {...form.register("reportTitle")} disabled={!editable} />
-              </Field>
-              <Field label="Version plantilla">
-                <Input {...form.register("templateVersion")} disabled={!editable} />
-              </Field>
+            <div ref={stepsTopRef} className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm font-medium text-card-foreground">
+                  Captura por pasos{" "}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    Paso {stepIndex + 1} de {stepItems.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={stepIndex === 0}
+                    onClick={() => goToStep(stepIndex - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Anterior
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={stepIndex === stepItems.length - 1}
+                    onClick={() => goToStep(stepIndex + 1)}
+                  >
+                    Siguiente <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Mobile: selector de paso. Desktop: chips clicables */}
+              <div className="sm:hidden">
+                <Select value={String(stepIndex)} onChange={(event) => goToStep(Number(event.target.value))}>
+                  {stepItems.map((step, index) => (
+                    <option key={step.title} value={index}>
+                      {step.title}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="hidden flex-wrap gap-2 sm:flex">
+                {stepItems.map((step, index) => {
+                  const active = index === stepIndex;
+                  return (
+                    <button
+                      key={step.title}
+                      type="button"
+                      onClick={() => goToStep(index)}
+                      className={[
+                        "inline-flex items-center rounded-full border px-3 py-1 text-xs",
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-muted-foreground hover:text-card-foreground",
+                      ].join(" ")}
+                    >
+                      <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-background/30 text-[11px] font-semibold">
+                        {index + 1}
+                      </span>
+                      {step.title}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <Section title="1) Expedientes">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="CDI">
-                  <Input {...form.register("expedientes.cdi")} disabled={!editable} />
-                </Field>
-                <Field label="CP">
-                  <Input {...form.register("expedientes.cp")} disabled={!editable} />
-                </Field>
-                <Field label="Carpeta judicial">
-                  <Input {...form.register("expedientes.carpetaJudicial")} disabled={!editable} />
-                </Field>
-                <Field label="Juicio oral">
-                  <Input {...form.register("expedientes.juicioOral")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
+            {stepItems[stepIndex]?.content}
 
-            <Section title="2) Fecha y hora">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Fecha">
-                  <Input placeholder="13 DE FEBRERO DE 2026" {...form.register("fechaHora.fecha")} disabled={!editable} />
-                </Field>
-                <Field label="Hora programada">
-                  <Input placeholder="HORA PROGRAMADA: 09:00" {...form.register("fechaHora.horaProgramada")} disabled={!editable} />
-                </Field>
-                <Field label="Hora inicio">
-                  <Input placeholder="09:15" {...form.register("fechaHora.horaInicio")} disabled={!editable} />
-                </Field>
-                <Field label="Hora termino">
-                  <Input placeholder="10:40" {...form.register("fechaHora.horaTermino")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="3) Delito">
-              <Field label="Nombre del delito">
-                <Input {...form.register("delito.nombre")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="4) Imputado">
-              <Field label="Nombre completo">
-                <Input {...form.register("imputado.nombreCompleto")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="5) Ofendido">
-              <Field label="Nombre completo">
-                <Input {...form.register("ofendido.nombreCompleto")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="6) Hecho">
-              <Field label={`Descripcion (min 20 para ${recordStatusLabel("READY")})`}>
-                <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="7) Tipo de audiencia / etapa">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Tipo audiencia">
-                  <Input {...form.register("audiencia.tipo")} disabled={!editable} />
-                </Field>
-                <Field label="Etapa">
-                  <Input {...form.register("audiencia.etapa")} disabled={!editable} />
-                </Field>
-                <Field label="Modalidad">
-                  <Input {...form.register("audiencia.modalidad")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="8) Autoridades">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Juez">
-                  <Input {...form.register("autoridades.juez")} disabled={!editable} />
-                </Field>
-                <Field label="MP">
-                  <Input {...form.register("autoridades.mp")} disabled={!editable} />
-                </Field>
-                <Field label="Defensa">
-                  <Input {...form.register("autoridades.defensa")} disabled={!editable} />
-                </Field>
-                <Field label="Asesor juridico">
-                  <Input {...form.register("autoridades.asesorJuridico")} disabled={!editable} />
-                </Field>
-              </div>
-              <Field label="Observacion">
-                <Textarea rows={3} {...form.register("autoridades.observacion")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="9) Resultado">
-              <Field label="Descripcion">
-                <Textarea rows={3} {...form.register("resultado.descripcion")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="10) Medida cautelar">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Descripcion">
-                  <Textarea rows={3} {...form.register("medidaCautelar.descripcion")} disabled={!editable} />
-                </Field>
-                <Field label="Tipo">
-                  <Input {...form.register("medidaCautelar.tipo")} disabled={!editable} />
-                </Field>
-                <Field label="Fundamento">
-                  <Input {...form.register("medidaCautelar.fundamento")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="11) Observaciones">
-              <Field label="Texto">
-                <Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} />
-              </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Relevancia">
-                  <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
-                    <option value="">Sin relevancia</option>
-                    <option value="ALTA">ALTA</option>
-                    <option value="BAJA">BAJA</option>
-                  </Select>
-                </Field>
-                <Field label="Violencia de genero">
-                  <div className="flex h-10 items-center rounded-md border border-input px-3">
-                    <input
-                      id="violenciaGenero"
-                      type="checkbox"
-                      className="mr-2"
-                      checked={form.watch("observaciones.violenciaGenero")}
-                      onChange={(event) => form.setValue("observaciones.violenciaGenero", event.target.checked)}
-                      disabled={!editable}
-                    />
-                    <Label htmlFor="violenciaGenero" className="text-sm font-normal">
-                      Marcar si aplica
-                    </Label>
-                  </div>
-                </Field>
-              </div>
-            </Section>
-
-            <Button type="submit" disabled={!editable || saving}>
-              <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar borrador"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={!editable || saving}>
+                <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar borrador"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={stepIndex === stepItems.length - 1}
+                onClick={() => goToStep(stepIndex + 1)}
+              >
+                Continuar
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
