@@ -440,51 +440,50 @@ export function RecordEditor({
     }
   };
 
-  const generateArtifact = async (format: "pptx" | "pdf", template?: "mampara" | "ficha") => {
+  const generateArtifact = (format: "pptx" | "pdf", template?: "mampara" | "ficha") => {
     const key = format === "pptx" ? (`pptx-${template || "mampara"}` as const) : "pdf";
     setGenerating(key);
-    // iOS Safari puede bloquear `window.open()` si ocurre despues de await.
-    // Abrimos una pestaña en blanco dentro del gesto del click y luego seteamos la URL al terminar.
-    const popup = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+
+    // Descarga directa (GET) para evitar bloqueos de Safari/iOS con descargas iniciadas despues de `await`.
+    // El endpoint genera + guarda artifact y responde con el archivo como attachment.
+    const query = new URLSearchParams({ format });
+    if (format === "pptx" && template) {
+      query.set("template", template);
+    }
+    const downloadUrl = `/api/records/${record.id}/generate?${query.toString()}`;
+
+    const isIOS =
+      typeof navigator !== "undefined" &&
+      (/iP(ad|hone|od)/.test(navigator.userAgent) ||
+        // iPadOS 13+ a veces reporta "Macintosh"; esto lo detecta como iOS con touch.
+        (navigator.userAgent.includes("Mac") && typeof document !== "undefined" && "ontouchend" in document));
+
     try {
-      const query = new URLSearchParams({ format });
-      if (format === "pptx" && template) {
-        query.set("template", template);
-      }
-
-      const response = await fetch(`/api/records/${record.id}/generate?${query.toString()}`, {
-        method: "POST",
+      toast.message("Generando documento...", {
+        description: "La descarga iniciara automaticamente.",
       });
-      const json = await response.json();
-      if (!response.ok) {
-        throw new Error(json.error || `No se pudo generar ${format}`);
-      }
 
-      toast.success(`${format.toUpperCase()} generado`);
-      const downloadUrl = `/api/artifacts/${json.data.id}/download`;
-      const isIOS =
-        typeof navigator !== "undefined" &&
-        (/iP(ad|hone|od)/.test(navigator.userAgent) ||
-          // iPadOS 13+ a veces reporta "Macintosh"; esto lo detecta como iOS con touch.
-          (navigator.userAgent.includes("Mac") && typeof document !== "undefined" && "ontouchend" in document));
-
-      // En iPhone/iPad a menudo la descarga no arranca si se navega una pestaña en background.
-      // Forzamos descarga en la misma pestaña para que Safari dispare el flujo de descargas.
       if (isIOS) {
-        popup?.close();
+        // iPhone/iPad: misma pestana para que Safari dispare el flujo de descargas.
         window.location.href = downloadUrl;
-      } else if (popup) {
-        popup.location.href = downloadUrl;
-        popup.focus();
       } else {
-        window.location.href = downloadUrl;
+        // Desktop/Android: nueva pestana (mas comodo) usando click de anchor.
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
       }
-      router.refresh();
+
+      // Refresca para mostrar el artifact ya generado en la lista (puede tardar unos segundos).
+      window.setTimeout(() => router.refresh(), 2000);
+      window.setTimeout(() => router.refresh(), 7000);
     } catch (error) {
-      popup?.close();
       toast.error(error instanceof Error ? error.message : "Error");
     } finally {
-      setGenerating("");
+      window.setTimeout(() => setGenerating(""), 2500);
     }
   };
 
@@ -510,6 +509,9 @@ export function RecordEditor({
 
   const canDeleteEvidence =
     role === "FLAGRANCIA" || role === "MP" || role === "ADMIN" || (role === "LITIGACION" && litigacionCanDeleteEvidence);
+
+  // La mampara toma la foto de la evidencia imagen mas reciente.
+  const mamparaPhoto = record.evidences.find((item) => item.contentType.startsWith("image/"));
 
   return (
     <div className="space-y-6">
@@ -664,9 +666,18 @@ export function RecordEditor({
 
       <Card>
         <CardHeader>
-          <CardTitle>Evidencias</CardTitle>
+          <CardTitle>Archivos (evidencias)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Foto para Mampara:{" "}
+            {mamparaPhoto ? (
+              <span className="font-medium text-card-foreground">{mamparaPhoto.originalName}</span>
+            ) : (
+              <span className="font-medium text-card-foreground">Sin foto (sube una imagen JPG/PNG)</span>
+            )}
+            . Se usa la imagen mas reciente.
+          </p>
           <div className="flex items-center gap-2">
             <Input
               type="file"
@@ -685,7 +696,14 @@ export function RecordEditor({
               className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3"
             >
               <div>
-                <p className="text-sm font-medium text-card-foreground">{evidence.originalName}</p>
+                <p className="text-sm font-medium text-card-foreground">
+                  {evidence.originalName}{" "}
+                  {mamparaPhoto?.id === evidence.id ? (
+                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                      Foto mampara
+                    </span>
+                  ) : null}
+                </p>
                 <p className="text-xs text-muted-foreground">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
               </div>
               <div className="flex items-center gap-2">

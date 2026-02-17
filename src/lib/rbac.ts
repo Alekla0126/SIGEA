@@ -24,7 +24,7 @@ const staticRules: Record<Action, Role[]> = {
   "case:read": ["FLAGRANCIA", "MP", "LITIGACION", "SUPERVISOR", "ADMIN"],
   "case:create": ["FLAGRANCIA", "MP", "ADMIN"],
   "case:update": ["FLAGRANCIA", "MP", "ADMIN"],
-  "case:delete": ["ADMIN"],
+  "case:delete": ["FLAGRANCIA", "MP", "ADMIN"],
   "record:read": ["FLAGRANCIA", "MP", "LITIGACION", "SUPERVISOR", "ADMIN"],
   "record:create": ["FLAGRANCIA", "MP", "ADMIN"],
   "record:update": ["FLAGRANCIA", "MP", "LITIGACION", "ADMIN"],

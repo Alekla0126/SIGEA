@@ -1,12 +1,12 @@
 "use client";
 
-import { Copy, Plus } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { canCreateRecord } from "@/lib/client-rbac";
+import { canCreateRecord, canDeleteCase } from "@/lib/client-rbac";
 import { emptyRecordForm } from "@/lib/client-schemas";
 import { recordStatusLabel } from "@/lib/labels";
 import type { RecordStatus, Role } from "@/lib/types";
@@ -69,6 +69,25 @@ export function CaseDetailView({
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [cloningId, setCloningId] = useState<string>("");
+
+  const deleteCase = async () => {
+    if (!confirm("Esta accion eliminara el caso y sus fichas. Desea continuar?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/cases/${data.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "No se pudo borrar caso");
+      }
+      toast.success("Caso eliminado");
+      router.replace("/cases");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
 
   const createRecord = async () => {
     setCreating(true);
@@ -138,13 +157,20 @@ export function CaseDetailView({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">{data.description || "Sin descripcion"}</p>
-          {canCreateRecord(role) ? (
-            <Button onClick={createRecord} disabled={creating}>
-              <Plus className="h-4 w-4" /> {creating ? "Creando ficha..." : "Crear ficha"}
-            </Button>
-          ) : (
-            <p className="text-sm text-muted-foreground">Tu rol no puede crear fichas. Solo puedes revisar/editar existentes.</p>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {canCreateRecord(role) ? (
+              <Button onClick={createRecord} disabled={creating}>
+                <Plus className="h-4 w-4" /> {creating ? "Creando ficha..." : "Crear ficha"}
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">Tu rol no puede crear fichas. Solo puedes revisar/editar existentes.</p>
+            )}
+            {canDeleteCase(role) ? (
+              <Button variant="destructive" onClick={deleteCase} title="Eliminar caso y todas sus fichas">
+                <Trash2 className="h-4 w-4" /> Borrar caso
+              </Button>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 

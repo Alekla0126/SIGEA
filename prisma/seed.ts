@@ -139,7 +139,7 @@ async function main() {
       },
     }));
 
-  // Agrega evidencia imagen demo para probar la mampara (foto se toma de la primera evidencia imagen).
+  // Agrega evidencia imagen demo para probar la mampara (foto se toma de la evidencia imagen mas reciente).
   const existingImageEvidence = await prisma.evidence.findFirst({
     where: {
       recordId: seedRecord.id,
@@ -161,7 +161,7 @@ async function main() {
       data: {
         recordId: seedRecord.id,
         filename,
-        originalName: "sample-photo.png",
+        originalName: "foto-mampara-demo.png",
         contentType: "image/png",
         sizeBytes: stat.size,
         storagePath: destPath,
