@@ -30,6 +30,9 @@ async function generateAndStoreArtifact({
   if (!record) {
     return { error: fail("Ficha no encontrada", 404), data: null };
   }
+  if (record.deletedAt) {
+    return { error: fail("La ficha esta en papelera. Restaurala para generar documentos.", 409), data: null };
+  }
 
   const parsedPayload = fichaPayloadSchema.safeParse(record.payload);
   if (!parsedPayload.success) {

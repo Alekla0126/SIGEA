@@ -21,13 +21,16 @@ export async function DELETE(
     where: { id },
     include: {
       record: {
-        select: { caseId: true },
+        select: { caseId: true, deletedAt: true },
       },
     },
   });
 
   if (!evidence) {
     return fail("Evidencia no encontrada", 404);
+  }
+  if (evidence.record.deletedAt) {
+    return fail("La ficha esta en papelera. Restaurala para modificar evidencias.", 409);
   }
 
   await prisma.evidence.delete({ where: { id } });

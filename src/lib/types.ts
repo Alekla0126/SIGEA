@@ -66,6 +66,7 @@ export type RecordItem = {
   version: number;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
   lastEditedAt: string | null;
   case: {
     id: string;

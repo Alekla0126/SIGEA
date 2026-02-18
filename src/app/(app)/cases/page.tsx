@@ -19,6 +19,7 @@ export default async function CasesPage() {
         },
       },
       records: {
+        where: { deletedAt: null },
         select: {
           id: true,
           status: true,
@@ -30,7 +31,9 @@ export default async function CasesPage() {
       },
       _count: {
         select: {
-          records: true,
+          records: {
+            where: { deletedAt: null },
+          },
         },
       },
     },

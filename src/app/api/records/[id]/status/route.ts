@@ -22,6 +22,9 @@ export async function POST(
   if (!current) {
     return fail("Ficha no encontrada", 404);
   }
+  if (current.deletedAt) {
+    return fail("La ficha esta en papelera. Restaurala para cambiar estatus.", 409);
+  }
 
   const parsed = await parseBody(request, statusChangeSchema);
   if (parsed.error) {

@@ -13,6 +13,8 @@ export type Action =
   | "record:create"
   | "record:update"
   | "record:delete"
+  | "record:restore"
+  | "record:purge"
   | "record:status:ready"
   | "record:status:supervise"
   | "evidence:add"
@@ -34,6 +36,8 @@ const staticRules: Record<Action, Role[]> = {
   "record:create": ["FLAGRANCIA", "MP", "ADMIN"],
   "record:update": ["FLAGRANCIA", "MP", "LITIGACION", "ADMIN"],
   "record:delete": ["FLAGRANCIA", "MP", "SUPERVISOR"],
+  "record:restore": ["FLAGRANCIA", "MP", "SUPERVISOR"],
+  "record:purge": ["FLAGRANCIA", "MP", "SUPERVISOR"],
   "record:status:ready": ["FLAGRANCIA", "MP", "ADMIN"],
   "record:status:supervise": ["SUPERVISOR", "ADMIN"],
   "evidence:add": ["FLAGRANCIA", "MP", "ADMIN"],

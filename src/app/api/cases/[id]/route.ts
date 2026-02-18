@@ -29,6 +29,7 @@ export async function GET(
         select: { id: true, name: true, role: true },
       },
       records: {
+        where: { deletedAt: null },
         orderBy: { createdAt: "asc" },
         include: {
           createdBy: { select: { id: true, name: true, role: true } },

@@ -16,12 +16,12 @@ export default async function ReportsPage() {
     artifactsByFormat,
   ] = await Promise.all([
     prisma.case.count({ where: { deletedAt: null } }),
-    prisma.record.count({ where: { case: { deletedAt: null } } }),
-    prisma.evidence.count({ where: { record: { case: { deletedAt: null } } } }),
-    prisma.record.count({ where: { status: "APPROVED", case: { deletedAt: null } } }),
-    prisma.record.count({ where: { status: "NEEDS_CHANGES", case: { deletedAt: null } } }),
-    prisma.record.groupBy({ by: ["status"], where: { case: { deletedAt: null } }, _count: { _all: true } }),
-    prisma.artifact.groupBy({ by: ["format"], where: { record: { case: { deletedAt: null } } }, _count: { _all: true } }),
+    prisma.record.count({ where: { case: { deletedAt: null }, deletedAt: null } }),
+    prisma.evidence.count({ where: { record: { case: { deletedAt: null }, deletedAt: null } } }),
+    prisma.record.count({ where: { status: "APPROVED", case: { deletedAt: null }, deletedAt: null } }),
+    prisma.record.count({ where: { status: "NEEDS_CHANGES", case: { deletedAt: null }, deletedAt: null } }),
+    prisma.record.groupBy({ by: ["status"], where: { case: { deletedAt: null }, deletedAt: null }, _count: { _all: true } }),
+    prisma.artifact.groupBy({ by: ["format"], where: { record: { case: { deletedAt: null }, deletedAt: null } }, _count: { _all: true } }),
   ]);
 
   const monthsToShow = 12;
@@ -34,22 +34,22 @@ export default async function ReportsPage() {
       select: { createdAt: true },
     }),
     prisma.record.findMany({
-      where: { createdAt: { gte: oldestMonthStart }, case: { deletedAt: null } },
+      where: { createdAt: { gte: oldestMonthStart }, case: { deletedAt: null }, deletedAt: null },
       select: { createdAt: true },
     }),
     prisma.evidence.findMany({
-      where: { createdAt: { gte: oldestMonthStart }, record: { case: { deletedAt: null } } },
+      where: { createdAt: { gte: oldestMonthStart }, record: { case: { deletedAt: null }, deletedAt: null } },
       select: { createdAt: true },
     }),
     prisma.artifact.findMany({
-      where: { createdAt: { gte: oldestMonthStart }, record: { case: { deletedAt: null } } },
+      where: { createdAt: { gte: oldestMonthStart }, record: { case: { deletedAt: null }, deletedAt: null } },
       select: { createdAt: true, format: true },
     }),
     prisma.statusTransition.findMany({
       where: {
         createdAt: { gte: oldestMonthStart },
         toStatus: { in: ["APPROVED", "NEEDS_CHANGES"] },
-        record: { case: { deletedAt: null } },
+        record: { case: { deletedAt: null }, deletedAt: null },
       },
       select: { createdAt: true, toStatus: true },
     }),

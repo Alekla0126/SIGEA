@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronLeft, ChevronRight, Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, FileDown, RotateCcw, Save, Send, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +30,7 @@ type RecordEditorData = {
   version: number;
   currentArea: "FLAGRANCIA" | "LITIGACION" | "SUPERVISION";
   moduleOwner: "FLAGRANCIA" | "MP";
+  deletedAt?: string | null;
   payload: unknown;
   case: {
     id: string;
@@ -99,6 +100,7 @@ export function RecordEditor({
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
+  const inTrash = Boolean(record.deletedAt);
 
   const form = useForm<RecordFormInput>({
     resolver: zodResolver(recordFormSchema),
@@ -141,10 +143,10 @@ export function RecordEditor({
     };
   }, []);
 
-  const transitions = useMemo(
-    () => allowedTransitions(role, record.status, litigacionReadyEnabled),
-    [role, record.status, litigacionReadyEnabled],
-  );
+  const transitions = useMemo(() => {
+    if (inTrash) return [];
+    return allowedTransitions(role, record.status, litigacionReadyEnabled);
+  }, [inTrash, role, record.status, litigacionReadyEnabled]);
 
   const editable = canUpdateRecord(role);
 
@@ -433,6 +435,10 @@ export function RecordEditor({
       toast.error("Tu rol no puede editar fichas");
       return;
     }
+    if (inTrash) {
+      toast.error("La ficha esta en papelera. Restaurala para editarla.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -471,6 +477,10 @@ export function RecordEditor({
     if (toStatus === "DRAFT") {
       return;
     }
+    if (inTrash) {
+      toast.error("La ficha esta en papelera. Restaurala para cambiar estatus.");
+      return;
+    }
     let comment = "";
     if (toStatus === "NEEDS_CHANGES") {
       const answer = prompt("Comentario obligatorio para solicitar cambios:");
@@ -503,6 +513,10 @@ export function RecordEditor({
     if (!file) {
       return;
     }
+    if (inTrash) {
+      toast.error("La ficha esta en papelera. Restaurala para agregar evidencias.");
+      return;
+    }
 
     setUploading(true);
     try {
@@ -527,6 +541,10 @@ export function RecordEditor({
   };
 
   const deleteEvidence = async (evidenceId: string) => {
+    if (inTrash) {
+      toast.error("La ficha esta en papelera. Restaurala para modificar evidencias.");
+      return;
+    }
     if (!confirm("Deseas borrar esta evidencia?")) {
       return;
     }
@@ -547,6 +565,11 @@ export function RecordEditor({
   };
 
   const generateArtifact = (format: "pptx" | "pdf", template?: "mampara" | "ficha") => {
+    if (inTrash) {
+      toast.error("La ficha esta en papelera. Restaurala para generar documentos.");
+      return;
+    }
+
     const key = format === "pptx" ? (`pptx-${template || "mampara"}` as const) : "pdf";
     setGenerating(key);
 
@@ -594,7 +617,7 @@ export function RecordEditor({
   };
 
   const deleteRecord = async () => {
-    if (!confirm("Se eliminara la ficha. Continuar?")) {
+    if (!confirm("Enviar la ficha a papelera?")) {
       return;
     }
 
@@ -602,11 +625,45 @@ export function RecordEditor({
       const response = await fetch(`/api/records/${record.id}`, { method: "DELETE" });
       const json = await response.json();
       if (!response.ok) {
-        throw new Error(json.error || "No se pudo eliminar la ficha");
+        throw new Error(json.error || "No se pudo enviar a papelera");
       }
 
-      toast.success("Ficha eliminada");
-      router.replace(`/cases/${record.case.id}`);
+      toast.success("Ficha enviada a papelera");
+      router.replace("/records");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const restoreRecord = async () => {
+    try {
+      const response = await fetch(`/api/records/${record.id}/restore`, { method: "POST" });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo restaurar la ficha");
+      }
+      toast.success("Ficha restaurada");
+      router.replace("/records");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error");
+    }
+  };
+
+  const purgeRecord = async () => {
+    if (!confirm("Borrar definitivamente la ficha? Esta accion no se puede deshacer.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/records/${record.id}/purge`, { method: "DELETE" });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || "No se pudo borrar definitivamente la ficha");
+      }
+      toast.success("Ficha borrada definitivamente");
+      router.replace("/records");
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error");
@@ -614,7 +671,8 @@ export function RecordEditor({
   };
 
   const canDeleteEvidence =
-    role === "FLAGRANCIA" || role === "MP" || role === "ADMIN" || (role === "LITIGACION" && litigacionCanDeleteEvidence);
+    !inTrash &&
+    (role === "FLAGRANCIA" || role === "MP" || role === "ADMIN" || (role === "LITIGACION" && litigacionCanDeleteEvidence));
 
   // La mampara toma la foto de la evidencia imagen mas reciente.
   const mamparaPhoto = record.evidences.find((item) => item.contentType.startsWith("image/"));
@@ -635,6 +693,11 @@ export function RecordEditor({
           <p>
             Version: {record.version} · Area actual: {record.currentArea} · Module owner: {record.moduleOwner}
           </p>
+          {inTrash ? (
+            <div className="rounded-md border border-border bg-muted p-3 text-sm">
+              Esta ficha esta en papelera{record.deletedAt ? ` desde ${new Date(record.deletedAt).toLocaleString()}` : ""}.
+            </div>
+          ) : null}
           <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:overflow-visible">
             {transitions.map((item) => (
               <Button key={item.toStatus} size="sm" className="shrink-0" onClick={() => requestStatus(item.toStatus)}>
@@ -645,7 +708,7 @@ export function RecordEditor({
               size="sm"
               variant="outline"
               className="shrink-0"
-              disabled={generating !== ""}
+              disabled={inTrash || generating !== ""}
               onClick={() => generateArtifact("pptx", "mampara")}
             >
               <FileDown className="h-4 w-4" />{" "}
@@ -655,7 +718,7 @@ export function RecordEditor({
               size="sm"
               variant="outline"
               className="shrink-0"
-              disabled={generating !== ""}
+              disabled={inTrash || generating !== ""}
               onClick={() => generateArtifact("pptx", "ficha")}
             >
               <FileDown className="h-4 w-4" />{" "}
@@ -665,15 +728,25 @@ export function RecordEditor({
               size="sm"
               variant="outline"
               className="shrink-0"
-              disabled={generating !== ""}
+              disabled={inTrash || generating !== ""}
               onClick={() => generateArtifact("pdf")}
             >
               <FileDown className="h-4 w-4" /> {generating === "pdf" ? "Generando..." : "Generar PDF (Ficha)"}
             </Button>
-            {canDeleteRecord(role) ? (
+            {canDeleteRecord(role) && !inTrash ? (
               <Button size="sm" variant="destructive" className="shrink-0" onClick={deleteRecord}>
-                <Trash2 className="h-4 w-4" /> Borrar ficha
+                <Trash2 className="h-4 w-4" /> Enviar a papelera
               </Button>
+            ) : null}
+            {canDeleteRecord(role) && inTrash ? (
+              <>
+                <Button size="sm" variant="outline" className="shrink-0" onClick={restoreRecord}>
+                  <RotateCcw className="h-4 w-4" /> Restaurar ficha
+                </Button>
+                <Button size="sm" variant="destructive" className="shrink-0" onClick={purgeRecord}>
+                  <Trash2 className="h-4 w-4" /> Borrar definitivo
+                </Button>
+              </>
             ) : null}
           </div>
         </CardContent>
@@ -754,7 +827,7 @@ export function RecordEditor({
             {stepItems[stepIndex]?.content}
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button type="submit" disabled={!editable || saving}>
+              <Button type="submit" disabled={!editable || saving || inTrash}>
                 <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar borrador"}
               </Button>
               <Button
@@ -787,7 +860,7 @@ export function RecordEditor({
           <div className="flex items-center gap-2">
             <Input
               type="file"
-              disabled={uploading}
+              disabled={uploading || inTrash}
               onChange={(event) => uploadEvidence(event.target.files?.[0] ?? null)}
             />
             <Button type="button" variant="outline" disabled>

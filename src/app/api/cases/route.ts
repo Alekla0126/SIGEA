@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         select: { id: true, name: true, role: true },
       },
       records: {
+        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -36,7 +37,9 @@ export async function GET(request: Request) {
       },
       _count: {
         select: {
-          records: true,
+          records: {
+            where: { deletedAt: null },
+          },
         },
       },
     },

@@ -84,6 +84,7 @@ model User {
   casesDeleted    Case[]         @relation("CaseDeletedBy")
   recordsCreated  Record[]       @relation("RecordCreatedBy")
   recordsEdited   Record[]       @relation("RecordLastEditedBy")
+  recordsDeleted  Record[]       @relation("RecordDeletedBy")
   evidenceUploads Evidence[]
   notifications   Notification[]
   audits          AuditLog[]
@@ -126,6 +127,9 @@ model Record {
   lastEditedAt      DateTime?
   createdById       String
   createdBy         User               @relation("RecordCreatedBy", fields: [createdById], references: [id])
+  deletedAt         DateTime?
+  deletedById       String?
+  deletedBy         User?              @relation("RecordDeletedBy", fields: [deletedById], references: [id])
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   evidences         Evidence[]
@@ -136,6 +140,7 @@ model Record {
 
   @@index([caseId, createdAt])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model StatusTransition {

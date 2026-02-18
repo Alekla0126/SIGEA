@@ -24,6 +24,9 @@ export async function POST(
   if (!record) {
     return fail("Ficha no encontrada", 404);
   }
+  if (record.deletedAt) {
+    return fail("La ficha esta en papelera. Restaurala para agregar evidencia.", 409);
+  }
 
   const form = await request.formData();
   const file = form.get("file");

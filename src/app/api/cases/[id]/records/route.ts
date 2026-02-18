@@ -17,8 +17,11 @@ export async function GET(
   }
 
   const { id: caseId } = await context.params;
+  const searchParams = new URL(_request.url).searchParams;
+  const trashOnly = searchParams.get("trash") === "1";
+
   const records = await prisma.record.findMany({
-    where: { caseId },
+    where: trashOnly ? { caseId, deletedAt: { not: null } } : { caseId, deletedAt: null },
     orderBy: { createdAt: "asc" },
     include: {
       createdBy: {

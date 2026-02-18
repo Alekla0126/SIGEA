@@ -25,6 +25,14 @@ export function canDeleteRecord(role: Role) {
   return role === "FLAGRANCIA" || role === "MP" || role === "SUPERVISOR";
 }
 
+export function canRestoreRecord(role: Role) {
+  return canDeleteRecord(role);
+}
+
+export function canPurgeRecord(role: Role) {
+  return canDeleteRecord(role);
+}
+
 export function canSupervise(role: Role) {
   return role === "SUPERVISOR" || role === "ADMIN";
 }

@@ -20,6 +20,9 @@ export async function POST(
   if (!source) {
     return fail("Ficha origen no encontrada", 404);
   }
+  if (source.deletedAt) {
+    return fail("La ficha origen esta en papelera.", 409);
+  }
 
   const owningCase = await prisma.case.findUnique({ where: { id: source.caseId } });
   if (!owningCase) {

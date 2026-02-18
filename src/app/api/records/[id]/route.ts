@@ -41,6 +41,13 @@ export async function GET(
           role: true,
         },
       },
+      deletedBy: {
+        select: {
+          id: true,
+          name: true,
+          role: true,
+        },
+      },
       evidences: {
         orderBy: { createdAt: "desc" },
       },
@@ -78,6 +85,9 @@ export async function PATCH(
   const current = await prisma.record.findUnique({ where: { id } });
   if (!current) {
     return fail("Ficha no encontrada", 404);
+  }
+  if (current.deletedAt) {
+    return fail("La ficha esta en papelera. Restaurala para editarla.", 409);
   }
 
   const parsed = await parseBody(request, recordPatchSchema);
@@ -136,28 +146,28 @@ export async function DELETE(
     return fail("Ficha no encontrada", 404);
   }
 
-  await prisma.record.delete({ where: { id } });
-
-  try {
-    await writeAudit({
-      action: AuditAction.DELETE,
-      entityType: EntityType.RECORD,
-      entityId: id,
-      userId: auth.user.id,
-      caseId: current.caseId,
-      // No referenciar recordId como FK porque la ficha ya fue borrada.
-      // Guardar solo un resumen minimiza riesgo de errores/limites en diffJson.
-      before: {
-        id: current.id,
-        caseId: current.caseId,
-        status: current.status,
-        version: current.version,
-        createdAt: current.createdAt,
-      },
-    });
-  } catch (error) {
-    console.error("writeAudit(record.delete) failed", error);
+  if (current.deletedAt) {
+    return fail("La ficha ya esta en papelera.", 409);
   }
 
-  return ok({ deleted: true });
+  const trashed = await prisma.record.update({
+    where: { id },
+    data: {
+      deletedAt: new Date(),
+      deletedById: auth.user.id,
+    },
+  });
+
+  await writeAudit({
+    action: AuditAction.DELETE,
+    entityType: EntityType.RECORD,
+    entityId: id,
+    userId: auth.user.id,
+    caseId: current.caseId,
+    recordId: id,
+    before: current,
+    after: trashed,
+  });
+
+  return ok({ trashed: true });
 }

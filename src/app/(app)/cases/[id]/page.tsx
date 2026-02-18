@@ -13,6 +13,7 @@ export default async function CaseDetailPage({ params }: { params: Promise<{ id:
     where: { id },
     include: {
       records: {
+        where: { deletedAt: null },
         orderBy: { createdAt: "asc" },
         include: {
           createdBy: {
