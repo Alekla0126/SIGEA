@@ -59,10 +59,12 @@ export const recordFormSchema = z.object({
   observaciones: z.object({
     texto: optionalText(3000),
     // Solo existen ALTA/BAJA. "MEDIA" se acepta solo por compatibilidad y se normaliza a BAJA.
+    // Si viene vacio/undefined, se asume BAJA (amarillo).
     relevancia: z
-      .enum(["ALTA", "BAJA", "", "MEDIA"])
-      .transform((value): "ALTA" | "BAJA" | "" => (value === "MEDIA" ? "BAJA" : value)),
-    violenciaGenero: z.boolean(),
+      .enum(["ALTA", "BAJA", "MEDIA"])
+      .optional()
+      .transform((value): "ALTA" | "BAJA" => (value === "ALTA" ? "ALTA" : "BAJA")),
+    violenciaGenero: z.boolean().optional().default(false),
   }),
 });
 
@@ -82,6 +84,6 @@ export const emptyRecordForm: RecordFormInput = {
   audiencia: { tipo: "", etapa: "", modalidad: "" },
   autoridades: { juez: "", mp: "", defensa: "", asesorJuridico: "", observacion: "" },
   resultado: { descripcion: "" },
-  medidaCautelar: { descripcion: "", tipo: "", fundamento: "" },
-  observaciones: { texto: "", relevancia: "", violenciaGenero: false },
+  medidaCautelar: { descripcion: "NO APLICA", tipo: "", fundamento: "" },
+  observaciones: { texto: "", relevancia: "BAJA", violenciaGenero: false },
 };

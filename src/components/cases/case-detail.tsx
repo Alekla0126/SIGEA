@@ -147,7 +147,6 @@ export function CaseDetailView({
             ...emptyRecordForm,
             observaciones: {
               ...emptyRecordForm.observaciones,
-              relevancia: undefined,
             },
           },
           moduleOwner,

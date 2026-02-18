@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft, ChevronRight, Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -93,6 +93,7 @@ export function RecordEditor({
   const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-tarjeta" | "pptx-ficha" | "pdf">("");
   const [stepIndex, setStepIndex] = useState(0);
   const stepsTopRef = useRef<HTMLDivElement | null>(null);
+  const [medidasCatalogo, setMedidasCatalogo] = useState<Array<{ id: string; code: string; label: string; isActive: boolean }>>([]);
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
@@ -101,6 +102,32 @@ export function RecordEditor({
     resolver: zodResolver(recordFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/catalogs?category=MEDIDA_CAUTELAR");
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.error || "No se pudo cargar catalogo de medidas cautelares");
+        }
+        if (!cancelled) {
+          setMedidasCatalogo((json.data || []).filter((item: any) => item && item.isActive));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "Error");
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const transitions = useMemo(
     () => allowedTransitions(role, record.status, litigacionReadyEnabled),
@@ -267,7 +294,44 @@ export function RecordEditor({
       content: (
         <Section title="10) Medida cautelar">
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Descripcion">
+            <Field label="Catalogo (medidas cautelares)">
+              {(() => {
+                const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
+                const current = normalize(form.watch("medidaCautelar.descripcion") || "");
+                const matched = medidasCatalogo.find((item) => normalize(item.label) === current);
+                const value = matched?.code ?? "__custom__";
+
+                return (
+                  <Select
+                    value={value}
+                    onChange={(event) => {
+                      const code = event.target.value;
+                      if (code === "__custom__") {
+                        return;
+                      }
+                      const selected = medidasCatalogo.find((item) => item.code === code);
+                      if (selected) {
+                        form.setValue("medidaCautelar.descripcion", selected.label, { shouldDirty: true });
+                      }
+                    }}
+                    disabled={!editable || medidasCatalogo.length === 0}
+                  >
+                    <option value="__custom__">
+                      {medidasCatalogo.length === 0 ? "Cargando catalogo..." : "Personalizada (no cambiar)"}
+                    </option>
+                    {medidasCatalogo.map((item) => (
+                      <option key={item.id} value={item.code}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </Select>
+                );
+              })()}
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selecciona una medida y, si aplica, ajusta la descripcion.
+              </p>
+            </Field>
+            <Field label="Descripcion (editable)">
               <Textarea rows={3} {...form.register("medidaCautelar.descripcion")} disabled={!editable} />
             </Field>
             <Field label="Tipo">
@@ -287,30 +351,47 @@ export function RecordEditor({
           <Field label="Texto">
             <Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} />
           </Field>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Relevancia">
-              <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
-                <option value="">Sin relevancia</option>
-                <option value="ALTA">ALTA</option>
-                <option value="BAJA">BAJA</option>
-              </Select>
-            </Field>
-            <Field label="Violencia de genero">
-              <div className="flex h-10 items-center rounded-md border border-input px-3">
-                <input
-                  id="violenciaGenero"
-                  type="checkbox"
-                  className="mr-2"
-                  checked={form.watch("observaciones.violenciaGenero")}
-                  onChange={(event) => form.setValue("observaciones.violenciaGenero", event.target.checked)}
-                  disabled={!editable}
-                />
-                <Label htmlFor="violenciaGenero" className="text-sm font-normal">
-                  Marcar si aplica
-                </Label>
+          {(() => {
+            const relevancia = form.watch("observaciones.relevancia");
+            const violenciaGenero = form.watch("observaciones.violenciaGenero");
+            const selected = violenciaGenero ? "VIOLENCIA_GENERO" : relevancia === "ALTA" ? "ALTA" : "BAJA";
+
+            return (
+              <div className="space-y-3">
+                <Field label="Color (Mampara)">
+                  <Select
+                    value={selected}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === "VIOLENCIA_GENERO") {
+                        form.setValue("observaciones.violenciaGenero", true, { shouldDirty: true });
+                        form.setValue("observaciones.relevancia", "BAJA", { shouldDirty: true });
+                        return;
+                      }
+
+                      form.setValue("observaciones.violenciaGenero", false, { shouldDirty: true });
+                      form.setValue("observaciones.relevancia", value === "ALTA" ? "ALTA" : "BAJA", { shouldDirty: true });
+                    }}
+                    disabled={!editable}
+                  >
+                    <option value="BAJA">RELEVANCIA BAJA (AMARILLO)</option>
+                    <option value="ALTA">RELEVANCIA ALTA (ROJO)</option>
+                    <option value="VIOLENCIA_GENERO">VIOLENCIA DE GENERO (MORADO)</option>
+                  </Select>
+                </Field>
+
+                <div className="flex flex-wrap items-center gap-4 rounded-md border border-border bg-muted/30 p-3">
+                  <ColorLegendItem
+                    label="VIOLENCIA DE GENERO"
+                    color="#CC99FF"
+                    active={selected === "VIOLENCIA_GENERO"}
+                  />
+                  <ColorLegendItem label="RELEVANCIA ALTA" color="#FF0000" active={selected === "ALTA"} />
+                  <ColorLegendItem label="RELEVANCIA BAJA" color="#FFFF00" active={selected === "BAJA"} />
+                </div>
               </div>
-            </Field>
-          </div>
+            );
+          })()}
         </Section>
       ),
     },
@@ -764,6 +845,24 @@ export function RecordEditor({
           ))}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function ColorLegendItem({ label, color, active }: { label: string; color: string; active: boolean }) {
+  return (
+    <div
+      className={[
+        "flex items-center gap-2 rounded-md px-2 py-1",
+        active ? "bg-background/60 ring-1 ring-primary" : "opacity-80",
+      ].join(" ")}
+    >
+      <span
+        className="h-4 w-4 shrink-0 rounded-sm border border-foreground/20"
+        style={{ backgroundColor: color }}
+        aria-hidden="true"
+      />
+      <span className="text-xs font-semibold text-foreground">{label}</span>
     </div>
   );
 }

@@ -190,6 +190,47 @@ async function main() {
     },
   });
 
+  const medidasCautelares = [
+    { code: "NO_APLICA", label: "NO APLICA" },
+    { code: "I_PRESENTACION_PERIODICA", label: "I. La presentación periódica ante el juez o ante autoridad distinta que aquél designe" },
+    { code: "II_GARANTIA_ECONOMICA", label: "II. La exhibición de una garantía económica" },
+    { code: "III_EMBARGO_BIENES", label: "III. El embargo de bienes" },
+    { code: "IV_INMOVILIZACION_CUENTAS", label: "IV. La inmovilización de cuentas y demás valores que se encuentren dentro del sistema financiero" },
+    { code: "V_PROHIBICION_SALIR_AMBITO", label: "V. La prohibición de salir sin autorización del país, de la localidad en la cual reside o del ámbito territorial que fije el juez" },
+    { code: "VI_CUIDADO_VIGILANCIA", label: "VI. El sometimiento al cuidado o vigilancia de una persona o institución determinada o internamiento a institución determinada" },
+    { code: "VII_NO_CONCURRIR_LUGARES", label: "VII. La prohibición de concurrir a determinadas reuniones o acercarse a ciertos lugares" },
+    { code: "VIII_NO_ACERCARSE_PERSONAS", label: "VIII. La prohibición de convivir, acercarse o comunicarse con determinadas personas, con las víctimas u ofendidos o testigos, siempre que no se afecte el derecho de defensa" },
+    { code: "IX_SEPARACION_DOMICILIO", label: "IX. La separación inmediata del domicilio" },
+    { code: "X_SUSPENSION_CARGO", label: "X. La suspensión temporal en el ejercicio del cargo cuando se le atribuye un delito cometido por servidores públicos" },
+    { code: "XI_SUSPENSION_ACTIVIDAD", label: "XI. La suspensión temporal en el ejercicio de una determinada actividad profesional o laboral" },
+    { code: "XII_LOCALIZADORES_ELECTRONICOS", label: "XII. La colocación de localizadores electrónicos" },
+    { code: "XIII_RESGUARDO_DOMICILIO", label: "XIII. El resguardo en su propio domicilio con las modalidades que el juez disponga" },
+    { code: "XIV_PRISION_PREVENTIVA_OFICIOSA", label: "XIV. La prisión preventiva (oficiosa)" },
+    { code: "XIV_PRISION_PREVENTIVA_JUSTIFICADA", label: "XIV. La prisión preventiva (justificada)" },
+  ] as const;
+
+  for (const item of medidasCautelares) {
+    await prisma.catalogItem.upsert({
+      where: {
+        category_code: {
+          category: "MEDIDA_CAUTELAR",
+          code: item.code,
+        },
+      },
+      update: {
+        label: item.label,
+        isActive: true,
+      },
+      create: {
+        category: "MEDIDA_CAUTELAR",
+        code: item.code,
+        label: item.label,
+        isActive: true,
+        createdById: admin.id,
+      },
+    });
+  }
+
   console.log("Seed completado.");
   console.log(`Usuarios demo password: ${defaultPassword}`);
 }
