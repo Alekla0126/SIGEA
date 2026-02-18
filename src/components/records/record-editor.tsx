@@ -93,6 +93,8 @@ export function RecordEditor({
   const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-tarjeta" | "pptx-ficha" | "pdf">("");
   const [stepIndex, setStepIndex] = useState(0);
   const stepsTopRef = useRef<HTMLDivElement | null>(null);
+  const juecesDatalistId = `jueces-list-${record.id}`;
+  const [juecesCatalogo, setJuecesCatalogo] = useState<Array<{ id: string; code: string; label: string; isActive: boolean }>>([]);
   const [medidasCatalogo, setMedidasCatalogo] = useState<Array<{ id: string; code: string; label: string; isActive: boolean }>>([]);
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
@@ -108,13 +110,23 @@ export function RecordEditor({
 
     async function load() {
       try {
-        const res = await fetch("/api/catalogs?category=MEDIDA_CAUTELAR");
-        const json = await res.json();
-        if (!res.ok) {
-          throw new Error(json.error || "No se pudo cargar catalogo de medidas cautelares");
+        const [juecesRes, medidasRes] = await Promise.all([
+          fetch("/api/catalogs?category=JUEZ"),
+          fetch("/api/catalogs?category=MEDIDA_CAUTELAR"),
+        ]);
+
+        const [juecesJson, medidasJson] = await Promise.all([juecesRes.json(), medidasRes.json()]);
+
+        if (!juecesRes.ok) {
+          throw new Error(juecesJson.error || "No se pudo cargar catalogo de jueces");
         }
+        if (!medidasRes.ok) {
+          throw new Error(medidasJson.error || "No se pudo cargar catalogo de medidas cautelares");
+        }
+
         if (!cancelled) {
-          setMedidasCatalogo((json.data || []).filter((item: any) => item && item.isActive));
+          setJuecesCatalogo((juecesJson.data || []).filter((item: any) => item && item.isActive));
+          setMedidasCatalogo((medidasJson.data || []).filter((item: any) => item && item.isActive));
         }
       } catch (error) {
         if (!cancelled) {
@@ -260,8 +272,21 @@ export function RecordEditor({
       content: (
         <Section title="8) Autoridades">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Juez">
-              <Input {...form.register("autoridades.juez")} disabled={!editable} />
+            <Field label="Juez (catalogo con busqueda rapida, editable)">
+              <Input
+                list={juecesDatalistId}
+                placeholder={juecesCatalogo.length > 0 ? "Escribe para buscar juez..." : "Captura nombre del juez"}
+                {...form.register("autoridades.juez")}
+                disabled={!editable}
+              />
+              <datalist id={juecesDatalistId}>
+                {juecesCatalogo.map((item) => (
+                  <option key={item.id} value={item.label} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                Puedes seleccionar del catalogo o escribir un juez nuevo manualmente.
+              </p>
             </Field>
             <Field label="MP">
               <Input {...form.register("autoridades.mp")} disabled={!editable} />

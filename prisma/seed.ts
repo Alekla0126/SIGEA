@@ -231,6 +231,90 @@ async function main() {
     });
   }
 
+  const jueces = [
+    "Hugo Alejandro Teutli Cruz",
+    "Martín José Calihua Martínez",
+    "Juan Gonzólez Bello",
+    "Jaime Arroyo Razo",
+    "Elizabeth Morales Sierra",
+    "Jesús Palma Zenteno",
+    "Helmo Mayoral Bello",
+    "Ana Karen González Arenas",
+    "Juan Marcelino Romero de Jesús",
+    "Maria Socorro López Reyes",
+    "Imelda Martínez Moxca",
+    "José Alejandro Ramirez Cante",
+    "Marco Antonio Mendoza Benítez",
+    "Enrique Romero Razo",
+    "Maria Rosalba Pantoja Vázquez",
+    "Marco Antonio Gabriel González Alegría",
+    "Griselda Méndez Ibarra",
+    "José Luis Arenas Juárez",
+    "José Cuautemoc Blázquez Guevara",
+    "Verónica Rojas Pasán",
+    "Miriam Morales botello",
+    "Maria del Rosario Sánhez Aguilera",
+    "Adolfo Hernández Martínez",
+    "Magda Reyes Delgado",
+    "Edna Vázquez Pérez",
+    "Cristina Pérez Terán",
+    "Maria Guadalupe Ramos Cruz",
+    "Génesis Estephani Sánchez Hernández",
+    "Gabriela Alvarado León",
+    "Antonia Ines Morales Palacios",
+    "Luz María Perea Perea Iturriaga",
+    "Alberto Gutiérrez Ríos",
+    "Aurora Emelia Velázquez",
+    "Ernesto Abraham Enriquez Durán",
+    "Lisheidy Zepeda González",
+    "Luis Sánchez Vázquez",
+    "José Nicolás Severiano Sánchez",
+    "Idalia Arciniega Arias",
+    "Fernando Martínez Espinoza",
+    "Renato Rojas Hidalgo",
+    "Liszet del Carmen Fuentes Trueba",
+    "Karla Ivonne Munguia Olmas",
+    "Miguel Angel Martín Hernández",
+    "Karla Patricia Ambrocio Vargas",
+    "Luis Fernando Cornejo Huesca",
+    "Daniela Victoria Ramírez Palma",
+    "Sergio Tecpanecatl Cuautle",
+    "José Hugo Salvador González Jiménez",
+    "José Alvaro Samiento Marquez",
+    "Julio César Ortíz Castro",
+    "Martha Liliana Farrera Bello",
+    "José Luis Campillo González",
+    "Maria Alejandra Aguilar Anacleto",
+    "Arturo Barranco Montoya",
+    "Lucio Leon Mata",
+    "Alberto Zenteno Reyes",
+    "Francisco Javier Martínez Castillo",
+    "Kenia Salgado Covarrubias",
+  ] as const;
+
+  for (const [index, label] of jueces.entries()) {
+    const code = `JUEZ_${String(index + 1).padStart(3, "0")}`;
+    await prisma.catalogItem.upsert({
+      where: {
+        category_code: {
+          category: "JUEZ",
+          code,
+        },
+      },
+      update: {
+        label,
+        isActive: true,
+      },
+      create: {
+        category: "JUEZ",
+        code,
+        label,
+        isActive: true,
+        createdById: admin.id,
+      },
+    });
+  }
+
   console.log("Seed completado.");
   console.log(`Usuarios demo password: ${defaultPassword}`);
 }
