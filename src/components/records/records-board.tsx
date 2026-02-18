@@ -3,7 +3,7 @@
 import { RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { canDeleteRecord, canPurgeRecord, canRestoreRecord } from "@/lib/client-rbac";
@@ -61,6 +61,14 @@ export function RecordsBoard({
   const [statusFilter, setStatusFilter] = useState<"ALL" | RecordStatus>("ALL");
   const [activeRecords, setActiveRecords] = useState(initialRecords);
   const [trashRecords, setTrashRecords] = useState(initialTrashRecords);
+
+  useEffect(() => {
+    setActiveRecords(initialRecords);
+  }, [initialRecords]);
+
+  useEffect(() => {
+    setTrashRecords(initialTrashRecords);
+  }, [initialTrashRecords]);
 
   const records = useMemo(() => {
     const list = view === "trash" ? trashRecords : activeRecords;
