@@ -696,7 +696,7 @@ export function RecordEditor({
                 <Select value={String(stepIndex)} onChange={(event) => goToStep(Number(event.target.value))}>
                   {stepItems.map((step, index) => (
                     <option key={step.title} value={index}>
-                      {step.title}
+                      {index + 1}. {stripStepTitle(step.title)}
                     </option>
                   ))}
                 </Select>
@@ -719,7 +719,7 @@ export function RecordEditor({
                       <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-background/30 text-[11px] font-semibold">
                         {index + 1}
                       </span>
-                      {step.title}
+                      {stripStepTitle(step.title)}
                     </button>
                   );
                 })}
@@ -865,6 +865,10 @@ function ColorLegendItem({ label, color, active }: { label: string; color: strin
       <span className="text-xs font-semibold text-foreground">{label}</span>
     </div>
   );
+}
+
+function stripStepTitle(title: string) {
+  return title.replace(/^\d+\)\s*/, "");
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
