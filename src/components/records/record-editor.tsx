@@ -168,9 +168,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "1) Expedientes",
+      title: "Expedientes",
       content: (
-        <Section title="1) Expedientes">
+        <Section title="Expedientes">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="CDI">
               <Input {...form.register("expedientes.cdi")} disabled={!editable} />
@@ -189,9 +189,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "2) Fecha y hora",
+      title: "Fecha y hora",
       content: (
-        <Section title="2) Fecha y hora">
+        <Section title="Fecha y hora">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Fecha">
               <Input placeholder="13 DE FEBRERO DE 2026" {...form.register("fechaHora.fecha")} disabled={!editable} />
@@ -210,9 +210,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "3) Delito",
+      title: "Delito",
       content: (
-        <Section title="3) Delito">
+        <Section title="Delito">
           <Field label="Nombre del delito">
             <Input {...form.register("delito.nombre")} disabled={!editable} />
           </Field>
@@ -220,9 +220,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "4) Imputado",
+      title: "Imputado",
       content: (
-        <Section title="4) Imputado">
+        <Section title="Imputado">
           <Field label="Nombre completo">
             <Input {...form.register("imputado.nombreCompleto")} disabled={!editable} />
           </Field>
@@ -230,9 +230,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "5) Ofendido",
+      title: "Ofendido",
       content: (
-        <Section title="5) Ofendido">
+        <Section title="Ofendido">
           <Field label="Nombre completo">
             <Input {...form.register("ofendido.nombreCompleto")} disabled={!editable} />
           </Field>
@@ -240,9 +240,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "6) Hecho",
+      title: "Hecho",
       content: (
-        <Section title="6) Hecho">
+        <Section title="Hecho">
           <Field label={`Descripcion (min 20 para ${recordStatusLabel("READY")})`}>
             <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
           </Field>
@@ -250,9 +250,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "7) Tipo de audiencia / etapa",
+      title: "Tipo de audiencia / etapa",
       content: (
-        <Section title="7) Tipo de audiencia / etapa">
+        <Section title="Tipo de audiencia / etapa">
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Tipo audiencia">
               <Input {...form.register("audiencia.tipo")} disabled={!editable} />
@@ -268,9 +268,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "8) Autoridades",
+      title: "Autoridades",
       content: (
-        <Section title="8) Autoridades">
+        <Section title="Autoridades">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Juez (catalogo con busqueda rapida, editable)">
               <Input
@@ -305,9 +305,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "9) Resultado",
+      title: "Resultado",
       content: (
-        <Section title="9) Resultado">
+        <Section title="Resultado">
           <Field label="Descripcion">
             <Textarea rows={3} {...form.register("resultado.descripcion")} disabled={!editable} />
           </Field>
@@ -315,9 +315,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "10) Medida cautelar",
+      title: "Medida cautelar",
       content: (
-        <Section title="10) Medida cautelar">
+        <Section title="Medida cautelar">
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Catalogo (medidas cautelares)">
               {(() => {
@@ -370,9 +370,9 @@ export function RecordEditor({
       ),
     },
     {
-      title: "11) Observaciones",
+      title: "Observaciones",
       content: (
-        <Section title="11) Observaciones">
+        <Section title="Observaciones">
           <Field label="Texto">
             <Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} />
           </Field>
