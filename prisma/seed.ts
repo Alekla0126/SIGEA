@@ -315,6 +315,98 @@ async function main() {
     });
   }
 
+  const delitos = [
+    "Rebelión",
+    "Sedición",
+    "Motín",
+    "Terrorismo",
+    "Conspiración",
+    "Quebrantamiento de sanción",
+    "Armas e instrumento prohibido",
+    "Delincuencia organizada",
+    "Asociación delictuosa y pandillerismo",
+    "Ataques a las vías de comunicación y a la seguridad en los medios de transporte",
+    "Violación de correspondencia",
+    "Delitos contra el medio ambiente",
+    "Delitos contra la infraestructura hidráulica",
+    "Incendio y otros estragos",
+    "Venta ilícita de bebidas alcohólicas",
+    "Desobediencia y resistencia de particulares",
+    "Oposición a que se ejecute alguna obra o trabajo público",
+    "Quebrantamiento de sellos",
+    "Delitos cometidos contra funcionarios públicos",
+    "Encubrimiento",
+    "Encubrimiento por receptación",
+    "Responsabilidad de abogados patronos y litigantes",
+    "Responsabilidad médica",
+    "Responsabilidad técnica",
+    "Responsabilidad notarial",
+    "Falsificación de acciones, obligaciones y otros documentos de crédito público",
+    "Falsificación de sellos, marcas y punzones",
+    "Falsificación de documentos en general",
+    "Falsedad de declaraciones e informes dados a una autoridad",
+    "Ocultación o variación de nombre o domicilio",
+    "Usurpación de funciones públicas o de profesión y uso indebido de uniformes o condecoraciones",
+    "Amenazas",
+    "Allanamiento de morada",
+    "Asalto y atraco",
+    "Privación ilegal de la libertad",
+    "Plagio o secuestro",
+    "Desaparición forzada",
+    "Violencia en eventos deportivos o de espectáculo",
+    "Lesiones dolosas",
+    "Inducción y auxilio al suicidio",
+    "Homicidio",
+    "Homicidio tumultuario",
+    "Feminicidio",
+    "Aborto",
+    "Ataques peligrosos",
+    "Abandono de personas",
+    "Incumplimiento de obligación alimentaria",
+    "Abuso de confianza",
+    "Fraude",
+    "Despojo",
+    "Daño en propiedad ajena",
+    "Robo de ganado",
+    "Robo a casa habitación",
+    "Robo a transeúnte",
+    "Robo en transporte público",
+    "Robo en transporte privado",
+    "Robo a cuentahabiente",
+    "Robo a cuentahabiente e instituciones bancarias",
+    "Robo a comercio",
+    "Robo de maquinaria",
+    "Robo de equipo agrícola",
+    "Narcomenudeo",
+    "Robo de vehículos",
+    "Robo de vehículos con mercancía",
+    "Robo de autopartes",
+    "Delito diverso (captura manual)",
+  ] as const;
+
+  for (const [index, label] of delitos.entries()) {
+    const code = `DELITO_${String(index + 1).padStart(3, "0")}`;
+    await prisma.catalogItem.upsert({
+      where: {
+        category_code: {
+          category: "DELITO",
+          code,
+        },
+      },
+      update: {
+        label,
+        isActive: true,
+      },
+      create: {
+        category: "DELITO",
+        code,
+        label,
+        isActive: true,
+        createdById: admin.id,
+      },
+    });
+  }
+
   console.log("Seed completado.");
   console.log(`Usuarios demo password: ${defaultPassword}`);
 }

@@ -65,6 +65,33 @@ type RecordEditorData = {
   }[];
 };
 
+type CatalogOption = {
+  id: string;
+  code: string;
+  label: string;
+  isActive: boolean;
+};
+
+function toActiveCatalog(payload: unknown): CatalogOption[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.filter((item): item is CatalogOption => {
+    if (!item || typeof item !== "object") {
+      return false;
+    }
+
+    const candidate = item as Partial<CatalogOption>;
+    return (
+      typeof candidate.id === "string" &&
+      typeof candidate.code === "string" &&
+      typeof candidate.label === "string" &&
+      candidate.isActive === true
+    );
+  });
+}
+
 function inferAreaByRole(role: Role): "FLAGRANCIA" | "LITIGACION" | "SUPERVISION" {
   if (role === "LITIGACION") {
     return "LITIGACION";
@@ -95,8 +122,9 @@ export function RecordEditor({
   const [stepIndex, setStepIndex] = useState(0);
   const stepsTopRef = useRef<HTMLDivElement | null>(null);
   const juecesDatalistId = `jueces-list-${record.id}`;
-  const [juecesCatalogo, setJuecesCatalogo] = useState<Array<{ id: string; code: string; label: string; isActive: boolean }>>([]);
-  const [medidasCatalogo, setMedidasCatalogo] = useState<Array<{ id: string; code: string; label: string; isActive: boolean }>>([]);
+  const [juecesCatalogo, setJuecesCatalogo] = useState<CatalogOption[]>([]);
+  const [medidasCatalogo, setMedidasCatalogo] = useState<CatalogOption[]>([]);
+  const [delitosCatalogo, setDelitosCatalogo] = useState<CatalogOption[]>([]);
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
@@ -112,12 +140,17 @@ export function RecordEditor({
 
     async function load() {
       try {
-        const [juecesRes, medidasRes] = await Promise.all([
+        const [juecesRes, medidasRes, delitosRes] = await Promise.all([
           fetch("/api/catalogs?category=JUEZ"),
           fetch("/api/catalogs?category=MEDIDA_CAUTELAR"),
+          fetch("/api/catalogs?category=DELITO"),
         ]);
 
-        const [juecesJson, medidasJson] = await Promise.all([juecesRes.json(), medidasRes.json()]);
+        const [juecesJson, medidasJson, delitosJson] = await Promise.all([
+          juecesRes.json(),
+          medidasRes.json(),
+          delitosRes.json(),
+        ]);
 
         if (!juecesRes.ok) {
           throw new Error(juecesJson.error || "No se pudo cargar catalogo de jueces");
@@ -125,10 +158,14 @@ export function RecordEditor({
         if (!medidasRes.ok) {
           throw new Error(medidasJson.error || "No se pudo cargar catalogo de medidas cautelares");
         }
+        if (!delitosRes.ok) {
+          throw new Error(delitosJson.error || "No se pudo cargar catalogo de delitos");
+        }
 
         if (!cancelled) {
-          setJuecesCatalogo((juecesJson.data || []).filter((item: any) => item && item.isActive));
-          setMedidasCatalogo((medidasJson.data || []).filter((item: any) => item && item.isActive));
+          setJuecesCatalogo(toActiveCatalog(juecesJson.data));
+          setMedidasCatalogo(toActiveCatalog(medidasJson.data));
+          setDelitosCatalogo(toActiveCatalog(delitosJson.data));
         }
       } catch (error) {
         if (!cancelled) {
@@ -215,7 +252,44 @@ export function RecordEditor({
       title: "Delito",
       content: (
         <Section title="Delito">
-          <Field label="Nombre del delito">
+          <Field label="Catalogo (delitos)">
+            {(() => {
+              const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
+              const current = normalize(form.watch("delito.nombre") || "");
+              const matched = delitosCatalogo.find((item) => normalize(item.label) === current);
+              const value = matched?.code ?? "__custom__";
+
+              return (
+                <Select
+                  value={value}
+                  onChange={(event) => {
+                    const code = event.target.value;
+                    if (code === "__custom__") {
+                      return;
+                    }
+                    const selected = delitosCatalogo.find((item) => item.code === code);
+                    if (selected) {
+                      form.setValue("delito.nombre", selected.label, { shouldDirty: true });
+                    }
+                  }}
+                  disabled={!editable || delitosCatalogo.length === 0}
+                >
+                  <option value="__custom__">
+                    {delitosCatalogo.length === 0 ? "Cargando catalogo..." : "Personalizado (no cambiar)"}
+                  </option>
+                  {delitosCatalogo.map((item) => (
+                    <option key={item.id} value={item.code}>
+                      {item.label}
+                    </option>
+                  ))}
+                </Select>
+              );
+            })()}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Selecciona un delito del catalogo o captura manualmente un delito diverso.
+            </p>
+          </Field>
+          <Field label="Nombre del delito (editable)">
             <Input {...form.register("delito.nombre")} disabled={!editable} />
           </Field>
         </Section>
