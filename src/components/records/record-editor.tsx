@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, Download, FileDown, Save, Send, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -91,6 +91,7 @@ export function RecordEditor({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState<"" | "pptx-mampara" | "pptx-tarjeta" | "pptx-ficha" | "pdf">("");
+  const [captureStep, setCaptureStep] = useState<1 | 2 | 3 | 4>(1);
 
   const parsedPayload = recordFormSchema.safeParse(record.payload);
   const defaultValues = parsedPayload.success ? parsedPayload.data : emptyRecordForm;
@@ -358,211 +359,204 @@ export function RecordEditor({
 
       <Card>
         <CardHeader>
-          <CardTitle>Plantilla unica de ficha (11 secciones)</CardTitle>
+          <CardTitle>Captura de ficha por pasos</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={submitDraft}>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Agencia">
-                <Input {...form.register("agencyName")} disabled={!editable} />
-              </Field>
-              <Field label="Titulo del reporte">
-                <Input {...form.register("reportTitle")} disabled={!editable} />
-              </Field>
-              <Field label="Version plantilla">
-                <Input {...form.register("templateVersion")} disabled={!editable} />
-              </Field>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((step) => {
+                const selected = captureStep === step;
+                return (
+                  <Button
+                    key={step}
+                    type="button"
+                    variant={selected ? "default" : "outline"}
+                    className="justify-start"
+                    onClick={() => setCaptureStep(step as 1 | 2 | 3 | 4)}
+                  >
+                    {selected ? <CheckCircle2 className="h-4 w-4" /> : <span className="text-xs">Paso</span>}
+                    {step}: {step === 1 ? "Datos base" : step === 2 ? "Audiencia" : step === 3 ? "Resultado" : "Foto"}
+                  </Button>
+                );
+              })}
             </div>
 
-            <Section title="1) Expedientes">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="CDI">
-                  <Input {...form.register("expedientes.cdi")} disabled={!editable} />
-                </Field>
-                <Field label="CP">
-                  <Input {...form.register("expedientes.cp")} disabled={!editable} />
-                </Field>
-                <Field label="Carpeta judicial">
-                  <Input {...form.register("expedientes.carpetaJudicial")} disabled={!editable} />
-                </Field>
-                <Field label="Juicio oral">
-                  <Input {...form.register("expedientes.juicioOral")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
+            {captureStep === 1 ? (
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Field label="Agencia">
+                    <Input {...form.register("agencyName")} disabled={!editable} />
+                  </Field>
+                  <Field label="Titulo del reporte">
+                    <Input {...form.register("reportTitle")} disabled={!editable} />
+                  </Field>
+                  <Field label="Version plantilla">
+                    <Input {...form.register("templateVersion")} disabled={!editable} />
+                  </Field>
+                </div>
 
-            <Section title="2) Fecha y hora">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Fecha">
-                  <Input placeholder="13 DE FEBRERO DE 2026" {...form.register("fechaHora.fecha")} disabled={!editable} />
-                </Field>
-                <Field label="Hora programada">
-                  <Input placeholder="HORA PROGRAMADA: 09:00" {...form.register("fechaHora.horaProgramada")} disabled={!editable} />
-                </Field>
-                <Field label="Hora inicio">
-                  <Input placeholder="09:15" {...form.register("fechaHora.horaInicio")} disabled={!editable} />
-                </Field>
-                <Field label="Hora termino">
-                  <Input placeholder="10:40" {...form.register("fechaHora.horaTermino")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="3) Delito">
-              <Field label="Nombre del delito">
-                <Input {...form.register("delito.nombre")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="4) Imputado">
-              <Field label="Nombre completo">
-                <Input {...form.register("imputado.nombreCompleto")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="5) Ofendido">
-              <Field label="Nombre completo">
-                <Input {...form.register("ofendido.nombreCompleto")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="6) Hecho">
-              <Field label={`Descripcion (min 20 para ${recordStatusLabel("READY")})`}>
-                <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="7) Tipo de audiencia / etapa">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Tipo audiencia">
-                  <Input {...form.register("audiencia.tipo")} disabled={!editable} />
-                </Field>
-                <Field label="Etapa">
-                  <Input {...form.register("audiencia.etapa")} disabled={!editable} />
-                </Field>
-                <Field label="Modalidad">
-                  <Input {...form.register("audiencia.modalidad")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="8) Autoridades">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Juez">
-                  <Input {...form.register("autoridades.juez")} disabled={!editable} />
-                </Field>
-                <Field label="MP">
-                  <Input {...form.register("autoridades.mp")} disabled={!editable} />
-                </Field>
-                <Field label="Defensa">
-                  <Input {...form.register("autoridades.defensa")} disabled={!editable} />
-                </Field>
-                <Field label="Asesor juridico">
-                  <Input {...form.register("autoridades.asesorJuridico")} disabled={!editable} />
-                </Field>
-              </div>
-              <Field label="Observacion">
-                <Textarea rows={3} {...form.register("autoridades.observacion")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="9) Resultado">
-              <Field label="Descripcion">
-                <Textarea rows={3} {...form.register("resultado.descripcion")} disabled={!editable} />
-              </Field>
-            </Section>
-
-            <Section title="10) Medida cautelar">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Descripcion">
-                  <Textarea rows={3} {...form.register("medidaCautelar.descripcion")} disabled={!editable} />
-                </Field>
-                <Field label="Tipo">
-                  <Input {...form.register("medidaCautelar.tipo")} disabled={!editable} />
-                </Field>
-                <Field label="Fundamento">
-                  <Input {...form.register("medidaCautelar.fundamento")} disabled={!editable} />
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="11) Observaciones">
-              <Field label="Texto">
-                <Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} />
-              </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Relevancia">
-                  <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
-                    <option value="">Sin relevancia</option>
-                    <option value="ALTA">ALTA</option>
-                    <option value="BAJA">BAJA</option>
-                  </Select>
-                </Field>
-                <Field label="Violencia de genero">
-                  <div className="flex h-10 items-center rounded-md border border-input px-3">
-                    <input
-                      id="violenciaGenero"
-                      type="checkbox"
-                      className="mr-2"
-                      checked={form.watch("observaciones.violenciaGenero")}
-                      onChange={(event) => form.setValue("observaciones.violenciaGenero", event.target.checked)}
-                      disabled={!editable}
-                    />
-                    <Label htmlFor="violenciaGenero" className="text-sm font-normal">
-                      Marcar si aplica
-                    </Label>
+                <Section title="1) Expedientes">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="CDI"><Input {...form.register("expedientes.cdi")} disabled={!editable} /></Field>
+                    <Field label="CP"><Input {...form.register("expedientes.cp")} disabled={!editable} /></Field>
+                    <Field label="Carpeta judicial"><Input {...form.register("expedientes.carpetaJudicial")} disabled={!editable} /></Field>
+                    <Field label="Juicio oral"><Input {...form.register("expedientes.juicioOral")} disabled={!editable} /></Field>
                   </div>
-                </Field>
-              </div>
-            </Section>
+                </Section>
 
-            <Button type="submit" disabled={!editable || saving}>
-              <Save className="h-4 w-4" /> {saving ? "Guardando..." : "Guardar borrador"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                <Section title="2) Fecha y hora">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Fecha"><Input placeholder="13 DE FEBRERO DE 2026" {...form.register("fechaHora.fecha")} disabled={!editable} /></Field>
+                    <Field label="Hora programada"><Input placeholder="HORA PROGRAMADA: 09:00" {...form.register("fechaHora.horaProgramada")} disabled={!editable} /></Field>
+                    <Field label="Hora inicio"><Input placeholder="09:15" {...form.register("fechaHora.horaInicio")} disabled={!editable} /></Field>
+                    <Field label="Hora termino"><Input placeholder="10:40" {...form.register("fechaHora.horaTermino")} disabled={!editable} /></Field>
+                  </div>
+                </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Evidencias</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Input
-              type="file"
-              disabled={uploading}
-              onChange={(event) => uploadEvidence(event.target.files?.[0] ?? null)}
-            />
-            <Button type="button" variant="outline" disabled>
-              <Upload className="h-4 w-4" />
-            </Button>
-          </div>
-          {record.evidences.length === 0 ? <p className="text-sm text-muted-foreground">No hay evidencias cargadas.</p> : null}
-          {record.evidences.map((evidence) => (
-            <div
-              key={evidence.id}
-              id={`evidence-${evidence.id}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3"
-            >
-              <div>
-                <p className="text-sm font-medium text-card-foreground">{evidence.originalName}</p>
-                <p className="text-xs text-muted-foreground">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
+                <Section title="3) Delito">
+                  <Field label="Nombre del delito"><Input {...form.register("delito.nombre")} disabled={!editable} /></Field>
+                </Section>
+
+                <Section title="4) Imputado">
+                  <Field label="Nombre completo"><Input {...form.register("imputado.nombreCompleto")} disabled={!editable} /></Field>
+                </Section>
+
+                <Section title="5) Ofendido">
+                  <Field label="Nombre completo"><Input {...form.register("ofendido.nombreCompleto")} disabled={!editable} /></Field>
+                </Section>
               </div>
-              <div className="flex items-center gap-2">
-                <a href={`/api/evidence/${evidence.id}/download`} download>
-                  <Button size="sm" variant="outline">
-                    <Download className="h-4 w-4" /> Descargar
-                  </Button>
-                </a>
-                {canDeleteEvidence ? (
-                  <Button size="sm" variant="destructive" onClick={() => deleteEvidence(evidence.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                ) : null}
+            ) : null}
+
+            {captureStep === 2 ? (
+              <div className="space-y-6">
+                <Section title="6) Hecho">
+                  <Field label={`Descripcion (min 20 para ${recordStatusLabel("READY")})`}>
+                    <Textarea rows={4} {...form.register("hecho.descripcion")} disabled={!editable} />
+                  </Field>
+                </Section>
+
+                <Section title="7) Tipo de audiencia / etapa">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Field label="Tipo audiencia"><Input {...form.register("audiencia.tipo")} disabled={!editable} /></Field>
+                    <Field label="Etapa"><Input {...form.register("audiencia.etapa")} disabled={!editable} /></Field>
+                    <Field label="Modalidad"><Input {...form.register("audiencia.modalidad")} disabled={!editable} /></Field>
+                  </div>
+                </Section>
+
+                <Section title="8) Autoridades">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Juez"><Input {...form.register("autoridades.juez")} disabled={!editable} /></Field>
+                    <Field label="MP"><Input {...form.register("autoridades.mp")} disabled={!editable} /></Field>
+                    <Field label="Defensa"><Input {...form.register("autoridades.defensa")} disabled={!editable} /></Field>
+                    <Field label="Asesor juridico"><Input {...form.register("autoridades.asesorJuridico")} disabled={!editable} /></Field>
+                  </div>
+                  <Field label="Observacion">
+                    <Textarea rows={3} {...form.register("autoridades.observacion")} disabled={!editable} />
+                  </Field>
+                </Section>
               </div>
+            ) : null}
+
+            {captureStep === 3 ? (
+              <div className="space-y-6">
+                <Section title="9) Resultado">
+                  <Field label="Descripcion"><Textarea rows={3} {...form.register("resultado.descripcion")} disabled={!editable} /></Field>
+                </Section>
+
+                <Section title="10) Medida cautelar">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Field label="Descripcion"><Textarea rows={3} {...form.register("medidaCautelar.descripcion")} disabled={!editable} /></Field>
+                    <Field label="Tipo"><Input {...form.register("medidaCautelar.tipo")} disabled={!editable} /></Field>
+                    <Field label="Fundamento"><Input {...form.register("medidaCautelar.fundamento")} disabled={!editable} /></Field>
+                  </div>
+                </Section>
+
+                <Section title="11) Observaciones">
+                  <Field label="Texto"><Textarea rows={3} {...form.register("observaciones.texto")} disabled={!editable} /></Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Relevancia">
+                      <Select {...form.register("observaciones.relevancia")} disabled={!editable}>
+                        <option value="">Sin relevancia</option>
+                        <option value="ALTA">ALTA</option>
+                        <option value="BAJA">BAJA</option>
+                      </Select>
+                    </Field>
+                    <Field label="Violencia de genero">
+                      <div className="flex h-10 items-center rounded-md border border-input px-3">
+                        <input
+                          id="violenciaGenero"
+                          type="checkbox"
+                          className="mr-2"
+                          checked={form.watch("observaciones.violenciaGenero")}
+                          onChange={(event) => form.setValue("observaciones.violenciaGenero", event.target.checked)}
+                          disabled={!editable}
+                        />
+                        <Label htmlFor="violenciaGenero" className="text-sm font-normal">Marcar si aplica</Label>
+                      </div>
+                    </Field>
+                  </div>
+                </Section>
+              </div>
+            ) : null}
+
+            {captureStep === 4 ? (
+              <Section title="Foto final / evidencias">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="file"
+                      disabled={uploading}
+                      onChange={(event) => uploadEvidence(event.target.files?.[0] ?? null)}
+                    />
+                    <Button type="button" variant="outline" disabled>
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {record.evidences.length === 0 ? <p className="text-sm text-muted-foreground">No hay evidencias cargadas.</p> : null}
+                  {record.evidences.map((evidence) => (
+                    <div
+                      key={evidence.id}
+                      id={`evidence-${evidence.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-card-foreground">{evidence.originalName}</p>
+                        <p className="text-xs text-muted-foreground">{Math.round(evidence.sizeBytes / 1024)} KB · {new Date(evidence.createdAt).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <a href={`/api/evidence/${evidence.id}/download`} download>
+                          <Button size="sm" variant="outline">
+                            <Download className="h-4 w-4" /> Descargar
+                          </Button>
+                        </a>
+                        {canDeleteEvidence ? (
+                          <Button size="sm" variant="destructive" onClick={() => deleteEvidence(evidence.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              {captureStep > 1 ? (
+                <Button type="button" variant="outline" onClick={() => setCaptureStep((captureStep - 1) as 1 | 2 | 3 | 4)}>
+                  Paso anterior
+                </Button>
+              ) : null}
+              {captureStep < 4 ? (
+                <Button type="button" onClick={() => setCaptureStep((captureStep + 1) as 1 | 2 | 3 | 4)}>
+                  Siguiente paso
+                </Button>
+              ) : null}
+              <Button type="submit" variant={captureStep === 4 ? "default" : "outline"} disabled={!editable || saving}>
+                <Save className="h-4 w-4" /> {saving ? "Guardando..." : captureStep === 4 ? "Guardar y finalizar" : "Guardar borrador"}
+              </Button>
             </div>
-          ))}
+          </form>
         </CardContent>
       </Card>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, ShieldCheck } from "lucide-react";
+import { Copy, LogIn, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -63,9 +63,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#0f172a,#1f4d66)] px-4 py-12">
-      <Card className="w-full max-w-md border-border/60 bg-card/95 shadow-2xl backdrop-blur">
-        <CardHeader>
+    <div className="min-h-screen bg-[linear-gradient(135deg,#0f172a,#1f4d66)] px-4 py-8 sm:py-12">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <Card className="hidden border-border/40 bg-card/10 text-white shadow-2xl backdrop-blur lg:block">
+          <CardHeader>
+            <CardTitle className="text-2xl text-white">SIGEA</CardTitle>
+            <CardDescription className="text-slate-100">
+              Sistema de Gestion Documental para Audiencias.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-slate-200">
+            <p>• Acceso por rol para Flagrancia, Ministerio Publico, Litigacion y Supervisores.</p>
+            <p>• Captura estructurada de ficha y evidencias con generacion de documentos.</p>
+            <p>• Seguimiento de cambios de estado y trazabilidad de auditoria.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="w-full border-border/60 bg-card/95 shadow-2xl backdrop-blur">
+          <CardHeader>
           <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <ShieldCheck className="h-5 w-5" />
           </div>
@@ -73,8 +88,8 @@ export default function LoginPage() {
           <CardDescription>
             Inicia sesion con tus credenciales para gestionar casos, fichas y documentos.
           </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+          <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo</Label>
@@ -98,6 +113,7 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" disabled={loading} className="w-full">
+              <LogIn className="h-4 w-4" />
               {loading ? "Ingresando..." : "Ingresar"}
             </Button>
           </form>
@@ -161,8 +177,9 @@ export default function LoginPage() {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
